@@ -16,6 +16,7 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	golang.org/x/crypto v0.46.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
+	gorm.io/gorm v1.25.10 // indirect
 )
 
 require (
@@ -38,5 +39,4 @@ require (
 	google.golang.org/grpc v1.79.3 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gorm.io/driver/postgres v1.6.0
-	gorm.io/gorm v1.31.1
 )
