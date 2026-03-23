@@ -2,7 +2,6 @@ package models
 
 import "time"
 
-// Roles
 const (
 	RoleAdmin     = "admin"
 	RoleModerator = "moderator"
@@ -10,19 +9,25 @@ const (
 )
 
 type Role struct {
-	ID        string    `db:"id"`
-	Name      string    `db:"name"`
-	CreatedAt time.Time `db:"created_at"`
+	ID        string `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	Name      string `gorm:"uniqueIndex;not null"`
+	CreatedAt time.Time
 }
 
 type User struct {
-	ID           string    `db:"id"`
-	Email        string    `db:"email"`
-	Name         string    `db:"name"`
-	PasswordHash string    `db:"password_hash"`
-	CreatedAt    time.Time `db:"created_at"`
-	UpdatedAt    time.Time `db:"updated_at"`
-	Roles        []string  `db:"-"`
+	ID           string `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
+	Email        string `gorm:"uniqueIndex;not null"`
+	Name         string `gorm:"not null"`
+	PasswordHash string `gorm:"not null"`
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	Roles        []Role `gorm:"many2many:user_roles;"`
+}
+
+// UserRole is the join table
+type UserRole struct {
+	UserID string `gorm:"type:uuid;primaryKey"`
+	RoleID string `gorm:"type:uuid;primaryKey"`
 }
 
 // AccessClaims are embedded in the short-lived access token.
