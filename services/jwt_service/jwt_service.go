@@ -1,4 +1,4 @@
-package services
+package jwt_service
 
 import (
 	"auth-service/config"
