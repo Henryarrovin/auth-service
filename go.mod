@@ -22,6 +22,7 @@ require (
 require (
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/joho/godotenv v1.5.1
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/redis/go-redis/v9 v9.18.0
