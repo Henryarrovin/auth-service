@@ -3,7 +3,7 @@ package auth_service
 import (
 	"auth-service/data"
 	"auth-service/models"
-	"auth-service/services"
+	"auth-service/services/jwt_service"
 	"context"
 	"fmt"
 
@@ -13,10 +13,10 @@ import (
 type AuthService struct {
 	users      *data.UserRepository
 	tokenStore *data.TokenStore
-	jwt        *services.JWTService
+	jwt        *jwt_service.JWTService
 }
 
-func NewAuthService(users *data.UserRepository, tokenStore *data.TokenStore, jwt *services.JWTService) *AuthService {
+func NewAuthService(users *data.UserRepository, tokenStore *data.TokenStore, jwt *jwt_service.JWTService) *AuthService {
 	return &AuthService{users: users, tokenStore: tokenStore, jwt: jwt}
 }
 
