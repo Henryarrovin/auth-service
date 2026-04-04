@@ -41,11 +41,6 @@ func NewJWTService(cfg config.JWTConfig) *JWTService {
 func (s *JWTService) IssueAccessToken(user *models.User) (string, error) {
 	now := time.Now()
 
-	roleNames := make([]string, len(user.Roles))
-	for i, r := range user.Roles {
-		roleNames[i] = r.Name
-	}
-
 	claims := accessTokenClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   user.ID,
@@ -55,7 +50,7 @@ func (s *JWTService) IssueAccessToken(user *models.User) (string, error) {
 		},
 		UserID: user.ID,
 		Email:  user.Email,
-		Roles:  roleNames,
+		Roles:  user.RoleNames(),
 	}
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(s.cfg.AccessSecret))
 }
