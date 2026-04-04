@@ -42,3 +42,11 @@ type RefreshClaims struct {
 	UserID    string `json:"uid"`
 	TokenHash string `json:"jti"`
 }
+
+func (u *User) RoleNames() []string {
+	names := make([]string, len(u.Roles))
+	for i, r := range u.Roles {
+		names[i] = r.Name
+	}
+	return names
+}
