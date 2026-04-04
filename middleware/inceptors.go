@@ -26,13 +26,15 @@ func UnaryLogger(logger *zap.Logger) grpc.UnaryServerInterceptor {
 			correlationID = uuid.NewString()
 		}
 
-		ctx = context.WithValue(ctx, CorrelationIDKey, correlationID)
-
-		logger.Info("grpc request",
+		enriched := logger.With(
 			zap.String("correlation_id", correlationID),
 			zap.String("method", info.FullMethod),
-			zap.Any("request", req),
+			zap.String("transport", "grpc"),
 		)
+		ctx = InjectLogger(ctx, enriched)
+		ctx = context.WithValue(ctx, CorrelationIDKey, correlationID)
+
+		enriched.Info("grpc request", zap.Any("request", req))
 
 		resp, err := handler(ctx, req)
 
@@ -41,9 +43,7 @@ func UnaryLogger(logger *zap.Logger) grpc.UnaryServerInterceptor {
 			code = s.Code()
 		}
 
-		logger.Info("grpc response",
-			zap.String("correlation_id", correlationID),
-			zap.String("method", info.FullMethod),
+		enriched.Info("grpc response",
 			zap.String("code", code.String()),
 			zap.Duration("duration", time.Since(start)),
 			zap.Any("response", resp),
@@ -93,26 +93,26 @@ func HTTPLogger(logger *zap.Logger) func(http.Handler) http.Handler {
 				correlationID = uuid.NewString()
 			}
 
-			ctx := context.WithValue(r.Context(), CorrelationIDKey, correlationID)
-			r = r.WithContext(ctx)
-
-			w.Header().Set(CorrelationIDKey, correlationID)
-
-			rw := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
-
-			logger.Info("http request",
+			enriched := logger.With(
 				zap.String("correlation_id", correlationID),
 				zap.String("method", r.Method),
 				zap.String("path", r.URL.Path),
 				zap.String("remote_addr", r.RemoteAddr),
+				zap.String("transport", "http"),
 			)
 
+			ctx := InjectLogger(r.Context(), enriched)
+			ctx = context.WithValue(ctx, CorrelationIDKey, correlationID)
+			r = r.WithContext(ctx)
+
+			w.Header().Set(CorrelationIDKey, correlationID)
+
+			enriched.Info("http request")
+
+			rw := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
 			next.ServeHTTP(rw, r)
 
-			logger.Info("http response",
-				zap.String("correlation_id", correlationID),
-				zap.String("method", r.Method),
-				zap.String("path", r.URL.Path),
+			enriched.Info("http response",
 				zap.Int("status", rw.statusCode),
 				zap.Duration("duration", time.Since(start)),
 			)
