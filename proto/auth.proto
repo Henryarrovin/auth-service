@@ -2,16 +2,58 @@ syntax = "proto3";
 
 package auth.v1;
 
+import "google/api/annotations.proto";
+
 option go_package = "/";
 
 service AuthService {
-  rpc Register      (RegisterRequest)      returns (RegisterResponse);
-  rpc Login         (LoginRequest)         returns (LoginResponse);
-  rpc Refresh       (RefreshRequest)       returns (RefreshResponse);
-  rpc Logout        (LogoutRequest)        returns (LogoutResponse);
-  rpc ValidateToken (ValidateTokenRequest) returns (ValidateTokenResponse);
-  rpc AssignRole    (AssignRoleRequest)    returns (AssignRoleResponse);
-  rpc GetUserRoles  (GetUserRolesRequest)  returns (GetUserRolesResponse);
+  rpc Register (RegisterRequest) returns (RegisterResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/register"
+      body: "*"
+    };
+  }
+
+  rpc Login (LoginRequest) returns (LoginResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/login"
+      body: "*"
+    };
+  }
+
+  rpc Refresh (RefreshRequest) returns (RefreshResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/refresh"
+      body: "*"
+    };
+  }
+
+  rpc Logout (LogoutRequest) returns (LogoutResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/logout"
+      body: "*"
+    };
+  }
+
+  rpc ValidateToken (ValidateTokenRequest) returns (ValidateTokenResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/validate"
+      body: "*"
+    };
+  }
+
+  rpc AssignRole (AssignRoleRequest) returns (AssignRoleResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/roles/assign"
+      body: "*"
+    };
+  }
+
+  rpc GetUserRoles (GetUserRolesRequest) returns (GetUserRolesResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/auth/roles/{user_id}"
+    };
+  }
 }
 
 message Role {
@@ -63,20 +105,20 @@ message LogoutResponse {
 }
 
 message ValidateTokenRequest {
-  string token              = 1;
-  string canonical_method   = 2;
-  string canonical_path     = 3;
-  string canonical_date     = 4;
-  string service_name       = 5;
-  string canonical_sig      = 6;
+  string token            = 1;
+  string canonical_method = 2;
+  string canonical_path   = 3;
+  string canonical_date   = 4;
+  string service_name     = 5;
+  string canonical_sig    = 6;
 }
 
 message ValidateTokenResponse {
-  bool             valid   = 1;
-  string           user_id = 2;
-  string           email   = 3;
-  repeated string  roles   = 4;
-  string           error   = 5;
+  bool            valid   = 1;
+  string          user_id = 2;
+  string          email   = 3;
+  repeated string roles   = 4;
+  string          error   = 5;
 }
 
 message AssignRoleRequest {
