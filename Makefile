@@ -21,6 +21,6 @@ build:
 	go build -o bin/auth-service .
 
 wire:
-	cd wire && wire gen
+	cd wire && wire
 
 .PHONY: wire proto run build
