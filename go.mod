@@ -13,6 +13,7 @@ require (
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
+	github.com/googleapis/googleapis v0.0.0-20260402184619-8d52a0bd5332 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/pgx/v5 v5.6.0 // indirect
@@ -48,5 +49,3 @@ require (
 	google.golang.org/protobuf v1.36.11
 	gorm.io/driver/postgres v1.6.0
 )
-
-replace auth-service => ./
