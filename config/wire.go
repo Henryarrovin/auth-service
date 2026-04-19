@@ -4,4 +4,24 @@ import "github.com/google/wire"
 
 var ProviderSet = wire.NewSet(
 	Load,
+	ProvideJWTConfig,
+	ProvideServerConfig,
+	ProvideDatabaseConfig,
+	ProvideRedisConfig,
 )
+
+func ProvideJWTConfig(cfg *Config) JWTConfig {
+	return cfg.JWT
+}
+
+func ProvideServerConfig(cfg *Config) ServerConfig {
+	return cfg.Server
+}
+
+func ProvideDatabaseConfig(cfg *Config) DatabaseConfig {
+	return cfg.Database
+}
+
+func ProvideRedisConfig(cfg *Config) RedisConfig {
+	return cfg.Redis
+}
