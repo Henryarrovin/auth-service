@@ -16,6 +16,7 @@ import (
 	authpb "auth-service/proto/authpb"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -23,6 +24,10 @@ import (
 )
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		fmt.Println("No .env file found (continuing with system env)")
+	}
+
 	cfgFile := flag.String("config", "", "path to config file (optional)")
 	flag.Parse()
 

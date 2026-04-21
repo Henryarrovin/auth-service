@@ -1,23 +1,23 @@
 server:
-  grpc_port: ${AUTH_SERVER_GRPC_PORT}
-  env: ${AUTH_SERVER_ENV}
+  grpc_port: 50051
+  env: development
 
 database:
-  host: ${AUTH_DB_HOST}
-  port: ${AUTH_DB_PORT}
-  user: ${AUTH_DB_USER}
-  password: ${AUTH_DB_PASSWORD}
-  dbname: ${AUTH_DB_NAME}
-  sslmode: ${AUTH_DB_SSLMODE}
+  host: localhost
+  port: 5432
+  user: postgres
+  password: postgres
+  dbname: s3demo
+  sslmode: disable
 
 redis:
-  addr: ${AUTH_REDIS_ADDR}
-  password: ${AUTH_REDIS_PASSWORD}
-  db: ${AUTH_REDIS_DB}
+  addr: localhost:6379
+  password: ""
+  db: 0
 
 jwt:
-  access_secret: ${AUTH_JWT_ACCESS_SECRET}
-  refresh_secret: ${AUTH_JWT_REFRESH_SECRET}
-  canonical_secret: ${AUTH_JWT_CANONICAL_SECRET}
+  access_secret: dev-secret
+  refresh_secret: dev-refresh
+  canonical_secret: dev-canonical
   access_ttl: "15m"
   refresh_ttl: "168h"
