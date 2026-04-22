@@ -68,3 +68,23 @@ func (h *AuthHandler) Login(ctx context.Context, req *authpb.LoginRequest) (*aut
 		TokenType:    "Bearer",
 	}, nil
 }
+
+func (h *AuthHandler) Refresh(ctx context.Context, req *authpb.RefreshRequest) (*authpb.RefreshResponse, error) {
+	log := middleware.FromContext(ctx, h.logger)
+
+	if req.RefreshToken == "" {
+		log.Warn("warn.auth_service.refresh_missing_token")
+		return nil, status.Error(codes.InvalidArgument, "refresh_token is required")
+	}
+
+	pair, err := h.svc.Refresh(ctx, req.RefreshToken)
+	if err != nil {
+		log.Warn("warn.auth_service.refresh_failed", zap.Error(err))
+		return nil, status.Error(codes.Unauthenticated, "invalid or expired refresh token")
+	}
+
+	return &authpb.RefreshResponse{
+		AccessToken: pair.AccessToken,
+		ExpiresIn:   pair.ExpiresIn,
+	}, nil
+}

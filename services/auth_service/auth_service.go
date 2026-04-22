@@ -85,6 +85,43 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (*Token
 	return pair, nil
 }
 
+func (s *AuthService) Refresh(ctx context.Context, refreshTokenStr string) (*TokenPair, error) {
+	log := middleware.FromContext(ctx, s.logger)
+	log.Info("info.auth_service.refresh_attempt")
+
+	claims, err := s.jwt.ParseRefreshToken(refreshTokenStr)
+	if err != nil {
+		log.Warn("warn.auth_service.refresh_invalid_token", zap.Error(err))
+		return nil, fmt.Errorf("invalid refresh token: %w", err)
+	}
+
+	ok, err := s.tokenStore.Exists(ctx, claims.UserID, claims.TokenHash)
+	if err != nil {
+		log.Error("err.auth_service.refresh_token_store_check_failed", zap.Error(err))
+		return nil, fmt.Errorf("checking token store: %w", err)
+	}
+	if !ok {
+		log.Warn("warn.auth_service.refresh_token_revoked", zap.String("user_id", claims.UserID))
+		return nil, fmt.Errorf("refresh token has been revoked")
+	}
+
+	_ = s.tokenStore.Revoke(ctx, claims.UserID, claims.TokenHash)
+
+	user, err := s.users.FindByID(ctx, claims.UserID)
+	if err != nil {
+		log.Error("err.auth_service.refresh_user_not_found", zap.String("user_id", claims.UserID))
+		return nil, fmt.Errorf("user not found: %w", err)
+	}
+
+	pair, err := s.issuePair(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Info("info.auth_service.refresh_successful", zap.String("user_id", user.ID))
+	return pair, nil
+}
+
 func (s *AuthService) issuePair(ctx context.Context, user *models.User) (*TokenPair, error) {
 	log := middleware.FromContext(ctx, s.logger)
 
