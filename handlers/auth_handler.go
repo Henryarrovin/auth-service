@@ -88,3 +88,19 @@ func (h *AuthHandler) Refresh(ctx context.Context, req *authpb.RefreshRequest) (
 		ExpiresIn:   pair.ExpiresIn,
 	}, nil
 }
+
+func (h *AuthHandler) Logout(ctx context.Context, req *authpb.LogoutRequest) (*authpb.LogoutResponse, error) {
+	log := middleware.FromContext(ctx, h.logger)
+
+	if req.AccessToken == "" {
+		log.Warn("warn.auth_service.logout_missing_token")
+		return nil, status.Error(codes.InvalidArgument, "access_token is required")
+	}
+
+	if err := h.svc.Logout(ctx, req.AccessToken); err != nil {
+		log.Error("err.auth_service.logout_failed", zap.Error(err))
+		return &authpb.LogoutResponse{Success: false, Message: err.Error()}, nil
+	}
+
+	return &authpb.LogoutResponse{Success: true, Message: "logged out successfully"}, nil
+}

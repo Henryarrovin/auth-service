@@ -122,6 +122,25 @@ func (s *AuthService) Refresh(ctx context.Context, refreshTokenStr string) (*Tok
 	return pair, nil
 }
 
+func (s *AuthService) Logout(ctx context.Context, accessTokenStr string) error {
+	log := middleware.FromContext(ctx, s.logger)
+	log.Info("info.auth_service.logout_attempt")
+
+	claims, err := s.jwt.ValidateAccessToken(accessTokenStr)
+	if err != nil {
+		log.Warn("warn.auth_service.invalid_token_on_logout", zap.Error(err))
+		return fmt.Errorf("invalid token: %w", err)
+	}
+
+	if err := s.tokenStore.RevokeAll(ctx, claims.UserID); err != nil {
+		log.Error("err.auth_service.revoke_tokens_failed", zap.String("user_id", claims.UserID), zap.Error(err))
+		return err
+	}
+
+	log.Info("info.auth_service.logout_successful", zap.String("user_id", claims.UserID))
+	return nil
+}
+
 func (s *AuthService) issuePair(ctx context.Context, user *models.User) (*TokenPair, error) {
 	log := middleware.FromContext(ctx, s.logger)
 
