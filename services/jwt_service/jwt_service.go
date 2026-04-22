@@ -152,3 +152,7 @@ func (s *JWTService) VerifyCanonical(method, path, date, service, sig string) bo
 	expected := s.SignCanonical(method, path, date, service)
 	return hmac.Equal([]byte(expected), []byte(sig))
 }
+
+func (s *JWTService) AccessTTL() time.Duration {
+	return s.cfg.AccessTTL
+}

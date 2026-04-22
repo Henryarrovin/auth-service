@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"auth-service/middleware"
 	"auth-service/services/auth_service"
 	"context"
 
@@ -22,6 +23,8 @@ func NewAuthHandler(svc *auth_service.AuthService, logger *zap.Logger) *AuthHand
 }
 
 func (h *AuthHandler) Register(ctx context.Context, req *authpb.RegisterRequest) (*authpb.RegisterResponse, error) {
+	log := middleware.FromContext(ctx, h.logger)
+
 	if req.Email == "" || req.Password == "" || req.Name == "" {
 		return nil, status.Error(codes.InvalidArgument, "email, password and name are required")
 	}
@@ -33,7 +36,7 @@ func (h *AuthHandler) Register(ctx context.Context, req *authpb.RegisterRequest)
 		Role:     req.Role,
 	})
 	if err != nil {
-		h.logger.Error("register failed", zap.Error(err))
+		log.Error("err.auth_service.register_failed", zap.Error(err))
 		return nil, status.Errorf(codes.Internal, "registration failed: %v", err)
 	}
 
@@ -41,5 +44,27 @@ func (h *AuthHandler) Register(ctx context.Context, req *authpb.RegisterRequest)
 		UserId:  user.ID,
 		Email:   user.Email,
 		Message: "user registered successfully",
+	}, nil
+}
+
+func (h *AuthHandler) Login(ctx context.Context, req *authpb.LoginRequest) (*authpb.LoginResponse, error) {
+	log := middleware.FromContext(ctx, h.logger)
+
+	if req.Email == "" || req.Password == "" {
+		log.Warn("warn.auth_service.login_missing_fields")
+		return nil, status.Error(codes.InvalidArgument, "email and password are required")
+	}
+
+	pair, err := h.svc.Login(ctx, req.Email, req.Password)
+	if err != nil {
+		log.Warn("warn.auth_service.login_failed", zap.String("email", req.Email), zap.Error(err))
+		return nil, status.Error(codes.Unauthenticated, "invalid credentials")
+	}
+
+	return &authpb.LoginResponse{
+		AccessToken:  pair.AccessToken,
+		RefreshToken: pair.RefreshToken,
+		ExpiresIn:    pair.ExpiresIn,
+		TokenType:    "Bearer",
 	}, nil
 }
