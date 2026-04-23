@@ -104,3 +104,31 @@ func (h *AuthHandler) Logout(ctx context.Context, req *authpb.LogoutRequest) (*a
 
 	return &authpb.LogoutResponse{Success: true, Message: "logged out successfully"}, nil
 }
+
+func (h *AuthHandler) ValidateToken(ctx context.Context, req *authpb.ValidateTokenRequest) (*authpb.ValidateTokenResponse, error) {
+	log := middleware.FromContext(ctx, h.logger)
+	log.Info("info.auth_service.validate_token_request", zap.String("service", req.ServiceName))
+
+	result, err := h.svc.ValidateToken(ctx,
+		req.Token,
+		req.CanonicalMethod,
+		req.CanonicalPath,
+		req.CanonicalDate,
+		req.ServiceName,
+		req.CanonicalSig,
+	)
+	if err != nil {
+		log.Warn("warn.auth_service.validate_token_failed", zap.Error(err))
+		return &authpb.ValidateTokenResponse{
+			Valid: false,
+			Error: err.Error(),
+		}, nil
+	}
+
+	return &authpb.ValidateTokenResponse{
+		Valid:  true,
+		UserId: result.UserID,
+		Email:  result.Email,
+		Roles:  result.Roles,
+	}, nil
+}
