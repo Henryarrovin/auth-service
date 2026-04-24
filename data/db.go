@@ -5,14 +5,14 @@ import (
 	"auth-service/models"
 	"fmt"
 
+	"go.uber.org/zap"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
-func NewDB(cfg *config.Config) (*gorm.DB, error) {
+func NewDB(cfg *config.Config, logger *zap.Logger) (*gorm.DB, error) {
 	db, err := gorm.Open(postgres.Open(cfg.Database.DSN()), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger: NewGormLogger(logger),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("connecting to database: %w", err)
