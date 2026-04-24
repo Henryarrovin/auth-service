@@ -8,11 +8,20 @@ import (
 	"github.com/spf13/viper"
 )
 
+type KafkaConfig struct {
+	Brokers []string `mapstructure:"brokers"`
+	Topic   string   `mapstructure:"topic"`
+	GroupID string   `mapstructure:"group_id"`
+	LogDir  string   `mapstructure:"log_dir"`
+	Enabled bool     `mapstructure:"enabled"`
+}
+
 type Config struct {
 	Server   ServerConfig
 	Database DatabaseConfig
 	Redis    RedisConfig
 	JWT      JWTConfig
+	Kafka    KafkaConfig
 }
 
 type ServerConfig struct {
@@ -96,6 +105,13 @@ func Load(cfgFile string) (*Config, error) {
 	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, fmt.Errorf("unmarshalling config: %w", err)
 	}
+
+	// ── kafka ──────────────────────────────────
+	v.SetDefault("kafka.brokers", []string{"localhost:9092"})
+	v.SetDefault("kafka.topic", "auth-service-logs")
+	v.SetDefault("kafka.group_id", "auth-log-consumer")
+	v.SetDefault("kafka.log_dir", "./logs")
+	v.SetDefault("kafka.enabled", false)
 
 	return &cfg, nil
 }

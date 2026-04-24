@@ -8,6 +8,7 @@ var ProviderSet = wire.NewSet(
 	ProvideServerConfig,
 	ProvideDatabaseConfig,
 	ProvideRedisConfig,
+	ProvideKafkaConfig,
 )
 
 func ProvideJWTConfig(cfg *Config) JWTConfig {
@@ -24,4 +25,8 @@ func ProvideDatabaseConfig(cfg *Config) DatabaseConfig {
 
 func ProvideRedisConfig(cfg *Config) RedisConfig {
 	return cfg.Redis
+}
+
+func ProvideKafkaConfig(cfg *Config) KafkaConfig {
+	return cfg.Kafka
 }
