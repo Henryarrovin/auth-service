@@ -1,6 +1,8 @@
 package main
 
 import (
+	"auth-service/config"
+	kafka "auth-service/kafka_logger_pipeline"
 	"auth-service/middleware"
 	"auth-service/wire"
 	"context"
@@ -18,6 +20,7 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
@@ -31,21 +34,39 @@ func main() {
 	cfgFile := flag.String("config", "", "path to config file (optional)")
 	flag.Parse()
 
-	cfg := zap.NewDevelopmentConfig()
-	cfg.EncoderConfig.CallerKey = "caller"
-	logger, err := cfg.Build(zap.AddCaller(), zap.AddCallerSkip(0))
+	// ── Base console logger ───────────────────────────────────────────
+	consoleCfg := zap.NewDevelopmentConfig()
+	consoleCfg.EncoderConfig.CallerKey = "caller"
+	consoleCfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	baseLogger, err := consoleCfg.Build(zap.AddCaller(), zap.AddCallerSkip(0))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to build logger: %v\n", err)
 		os.Exit(1)
 	}
-	defer logger.Sync()
+	defer baseLogger.Sync()
 
+	// ── Load config early for Kafka setup ────────────────────────────
+	appCfg, err := config.Load(*cfgFile)
+	if err != nil {
+		baseLogger.Fatal("failed to load config", zap.Error(err))
+	}
+
+	// ── Build logger: console + kafka tee ────────────────────────────
+	logger, consumerCancel := buildLogger(appCfg, baseLogger)
+	defer consumerCancel()
+
+	if logger != baseLogger {
+		defer logger.Sync()
+	}
+
+	// ── Dependency injection ──────────────────────────────────────────
 	authHandler, cleanup, err := wire.InitializeContainer(*cfgFile, logger)
 	if err != nil {
 		logger.Fatal("failed to initialize", zap.Error(err))
 	}
 	defer cleanup()
 
+	// ── gRPC server ───────────────────────────────────────────────────
 	grpcSrv := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(
 			middleware.UnaryRecovery(logger),
@@ -60,6 +81,7 @@ func main() {
 		logger.Fatal("grpc listen failed", zap.Error(err))
 	}
 
+	// ── gRPC-Gateway ──────────────────────────────────────────────────
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -75,18 +97,18 @@ func main() {
 		Handler: middleware.HTTPLogger(logger)(mux),
 	}
 
+	// ── Start gRPC ────────────────────────────────────────────────────
 	grpcReady := make(chan struct{})
-
 	go func() {
 		logger.Info("gRPC listening", zap.String("addr", ":50051"))
-		close(grpcReady) // signal that gRPC is ready
+		close(grpcReady)
 		if err := grpcSrv.Serve(grpcLis); err != nil {
 			logger.Fatal("grpc serve failed", zap.Error(err))
 		}
 	}()
-
 	<-grpcReady
 
+	// ── Start HTTP ────────────────────────────────────────────────────
 	go func() {
 		logger.Info("HTTP listening", zap.String("addr", ":8080"))
 		if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -94,13 +116,12 @@ func main() {
 		}
 	}()
 
-	// Graceful shutdown
+	// ── Graceful shutdown ─────────────────────────────────────────────
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
 	logger.Info("shutting down servers…")
-
 	grpcSrv.GracefulStop()
 
 	shutCtx, shutCancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -110,4 +131,52 @@ func main() {
 	}
 
 	logger.Info("servers stopped")
+}
+
+// buildLogger creates a tee logger: console + kafka (if enabled).
+// Returns the logger and a cancel func to stop the kafka consumer.
+func buildLogger(appCfg *config.Config, baseLogger *zap.Logger) (*zap.Logger, func()) {
+	if !appCfg.Kafka.Enabled {
+		baseLogger.Info("kafka logging disabled, using console only")
+		return baseLogger, func() {}
+	}
+
+	kafkaCore, err := kafka.NewKafkaCore(
+		appCfg.Kafka.Brokers,
+		appCfg.Kafka.Topic,
+		zapcore.InfoLevel,
+	)
+	if err != nil {
+		baseLogger.Error("kafka connection failed, using console only", zap.Error(err))
+		return baseLogger, func() {}
+	}
+
+	// Tee: console + kafka
+	logger := zap.New(
+		zapcore.NewTee(baseLogger.Core(), kafkaCore),
+		zap.AddCaller(),
+		zap.AddCallerSkip(0),
+	)
+
+	baseLogger.Info("kafka connected",
+		zap.Strings("brokers", appCfg.Kafka.Brokers),
+		zap.String("log_dir", appCfg.Kafka.LogDir),
+	)
+
+	consumer := kafka.NewLogConsumer(
+		appCfg.Kafka.Brokers,
+		appCfg.Kafka.Topic,
+		appCfg.Kafka.GroupID,
+		appCfg.Kafka.LogDir,
+		baseLogger,
+	)
+
+	consumerCtx, consumerCancel := context.WithCancel(context.Background())
+	go func() {
+		if err := consumer.Start(consumerCtx); err != nil {
+			baseLogger.Error("kafka consumer stopped", zap.Error(err))
+		}
+	}()
+
+	return logger, consumerCancel
 }
