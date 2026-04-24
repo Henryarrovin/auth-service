@@ -4,9 +4,10 @@ FROM golang:tip-bookworm AS builder
 WORKDIR /app
 
 # Install build dependencies
-RUN apk add --no-cache git ca-certificates tzdata
+RUN apt-get update && apt-get install -y \
+    git ca-certificates tzdata \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy go mod files first (cache layer)
 COPY go.mod go.sum ./
 RUN go mod download
 
