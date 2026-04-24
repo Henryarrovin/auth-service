@@ -1,15 +1,10 @@
-#Build stage
-FROM golang:tip-bookworm AS builder
+# Build stage
+FROM golang:1.22-alpine AS builder
 
 WORKDIR /app
 
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Install build dependencies
-RUN apt-get update && apt-get install -y \
-    --no-install-recommends \
-    git ca-certificates tzdata \
-    && rm -rf /var/lib/apt/lists/*
+# Install build dependencies (Alpine uses apk)
+RUN apk add --no-cache git ca-certificates tzdata
 
 COPY go.mod go.sum ./
 RUN go mod download
@@ -23,7 +18,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -o auth-service \
     ./main.go
 
-#Run stage
+# Run stage
 FROM alpine:3.20
 
 WORKDIR /app
