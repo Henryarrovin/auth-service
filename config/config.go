@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -112,6 +113,28 @@ func Load(cfgFile string) (*Config, error) {
 	v.SetDefault("kafka.group_id", "auth-log-consumer")
 	v.SetDefault("kafka.log_dir", "./logs")
 	v.SetDefault("kafka.enabled", false)
+
+	// manually read kafka fields from env
+	// Viper doesn't handle []string and bool from env vars reliably
+	if enabled := os.Getenv("AUTH_KAFKA_ENABLED"); enabled == "true" {
+		cfg.Kafka.Enabled = true
+	}
+
+	if brokers := os.Getenv("AUTH_KAFKA_BROKERS"); brokers != "" {
+		cfg.Kafka.Brokers = strings.Split(brokers, ",")
+	}
+
+	if topic := os.Getenv("AUTH_KAFKA_TOPIC"); topic != "" {
+		cfg.Kafka.Topic = topic
+	}
+
+	if groupID := os.Getenv("AUTH_KAFKA_GROUP_ID"); groupID != "" {
+		cfg.Kafka.GroupID = groupID
+	}
+
+	if logDir := os.Getenv("AUTH_KAFKA_LOG_DIR"); logDir != "" {
+		cfg.Kafka.LogDir = logDir
+	}
 
 	return &cfg, nil
 }
