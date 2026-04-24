@@ -178,6 +178,33 @@ func (s *AuthService) ValidateToken(ctx context.Context, tokenStr, method, path,
 	}, nil
 }
 
+func (s *AuthService) AssignRole(ctx context.Context, userID, roleName string) error {
+	log := middleware.FromContext(ctx, s.logger)
+	log.Info("info.auth_service.assigning_role", zap.String("user_id", userID), zap.String("role", roleName))
+
+	if err := s.users.AssignRole(ctx, userID, roleName); err != nil {
+		log.Error("err.auth_service.assign_role_failed", zap.Error(err))
+		return err
+	}
+
+	log.Info("info.auth_service.role_assigned", zap.String("user_id", userID), zap.String("role", roleName))
+	return nil
+}
+
+func (s *AuthService) GetUserRoles(ctx context.Context, userID string) ([]string, error) {
+	log := middleware.FromContext(ctx, s.logger)
+	log.Info("info.auth_service.getting_user_roles", zap.String("user_id", userID))
+
+	roles, err := s.users.GetRoles(ctx, userID)
+	if err != nil {
+		log.Error("err.auth_service.get_user_roles_failed", zap.String("user_id", userID), zap.Error(err))
+		return nil, err
+	}
+
+	log.Info("info.auth_service.got_user_roles", zap.String("user_id", userID), zap.Strings("roles", roles))
+	return roles, nil
+}
+
 func (s *AuthService) issuePair(ctx context.Context, user *models.User) (*TokenPair, error) {
 	log := middleware.FromContext(ctx, s.logger)
 

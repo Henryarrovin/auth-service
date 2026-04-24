@@ -132,3 +132,41 @@ func (h *AuthHandler) ValidateToken(ctx context.Context, req *authpb.ValidateTok
 		Roles:  result.Roles,
 	}, nil
 }
+
+func (h *AuthHandler) AssignRole(ctx context.Context, req *authpb.AssignRoleRequest) (*authpb.AssignRoleResponse, error) {
+	log := middleware.FromContext(ctx, h.logger)
+
+	if req.UserId == "" || req.RoleName == "" {
+		log.Warn("warn.auth_service.assign_role_missing_fields")
+		return nil, status.Error(codes.InvalidArgument, "user_id and role_name are required")
+	}
+
+	if err := h.svc.AssignRole(ctx, req.UserId, req.RoleName); err != nil {
+		log.Error("err.auth_service.assign_role_failed", zap.Error(err))
+		return nil, status.Errorf(codes.Internal, "assign role: %v", err)
+	}
+
+	return &authpb.AssignRoleResponse{Success: true, Message: "role assigned"}, nil
+}
+
+func (h *AuthHandler) GetUserRoles(ctx context.Context, req *authpb.GetUserRolesRequest) (*authpb.GetUserRolesResponse, error) {
+	log := middleware.FromContext(ctx, h.logger)
+
+	if req.UserId == "" {
+		log.Warn("warn.auth_service.get_user_roles_missing_user_id")
+		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+	}
+
+	names, err := h.svc.GetUserRoles(ctx, req.UserId)
+	if err != nil {
+		log.Error("err.auth_service.get_user_roles_failed", zap.String("user_id", req.UserId), zap.Error(err))
+		return nil, status.Errorf(codes.Internal, "get roles: %v", err)
+	}
+
+	var roles []*authpb.Role
+	for _, n := range names {
+		roles = append(roles, &authpb.Role{Name: n})
+	}
+
+	return &authpb.GetUserRolesResponse{Roles: roles}, nil
+}
