@@ -141,6 +141,43 @@ func (s *AuthService) Logout(ctx context.Context, accessTokenStr string) error {
 	return nil
 }
 
+func (s *AuthService) ValidateToken(ctx context.Context, tokenStr, method, path, date, service, canonicalSig string) (*ValidateResult, error) {
+	log := middleware.FromContext(ctx, s.logger)
+	log.Info("info.auth_service.validating_token",
+		zap.String("service", service),
+		zap.String("method", method),
+		zap.String("path", path),
+	)
+
+	claims, err := s.jwt.ValidateAccessToken(tokenStr)
+	if err != nil {
+		log.Warn("warn.auth_service.token_validation_failed", zap.Error(err))
+		return nil, fmt.Errorf("token validation failed: %w", err)
+	}
+
+	if method != "" && path != "" && date != "" && service != "" {
+		if !s.jwt.VerifyCanonical(method, path, date, service, canonicalSig) {
+			log.Warn("warn.auth_service.canonical_signature_invalid",
+				zap.String("service", service),
+				zap.String("method", method),
+				zap.String("path", path),
+			)
+			return nil, fmt.Errorf("canonical request signature invalid")
+		}
+	}
+
+	log.Info("info.auth_service.token_validated",
+		zap.String("user_id", claims.UserID),
+		zap.Strings("roles", claims.Roles),
+	)
+
+	return &ValidateResult{
+		UserID: claims.UserID,
+		Email:  claims.Email,
+		Roles:  claims.Roles,
+	}, nil
+}
+
 func (s *AuthService) issuePair(ctx context.Context, user *models.User) (*TokenPair, error) {
 	log := middleware.FromContext(ctx, s.logger)
 
