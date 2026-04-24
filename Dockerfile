@@ -3,8 +3,11 @@ FROM golang:tip-bookworm AS builder
 
 WORKDIR /app
 
+ENV DEBIAN_FRONTEND=noninteractive
+
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
+    --no-install-recommends \
     git ca-certificates tzdata \
     && rm -rf /var/lib/apt/lists/*
 
