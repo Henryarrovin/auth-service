@@ -54,7 +54,10 @@ func main() {
 	// ── Build logger: console + kafka tee ────────────────────────────
 	logger, consumerCancel := buildLogger(appCfg, baseLogger)
 	defer consumerCancel()
-	defer logger.Sync()
+
+	if logger != baseLogger {
+		defer logger.Sync()
+	}
 
 	// ── Dependency injection ──────────────────────────────────────────
 	authHandler, cleanup, err := wire.InitializeContainer(*cfgFile, logger)
@@ -144,50 +147,28 @@ func buildLogger(appCfg *config.Config, baseLogger *zap.Logger) (*zap.Logger, fu
 		zapcore.InfoLevel,
 	)
 	if err != nil {
-		baseLogger.Warn("kafka unavailable, falling back to console only", zap.Error(err))
+		baseLogger.Error("kafka connection failed, using console only", zap.Error(err))
 		return baseLogger, func() {}
 	}
 
-	// Console core
-	consoleEncoderCfg := zapcore.EncoderConfig{
-		TimeKey:        "timestamp",
-		LevelKey:       "level",
-		NameKey:        "logger",
-		CallerKey:      "caller",
-		MessageKey:     "msg",
-		StacktraceKey:  "stacktrace",
-		LineEnding:     zapcore.DefaultLineEnding,
-		EncodeLevel:    zapcore.CapitalColorLevelEncoder,
-		EncodeTime:     zapcore.ISO8601TimeEncoder,
-		EncodeDuration: zapcore.MillisDurationEncoder,
-		EncodeCaller:   zapcore.ShortCallerEncoder,
-	}
-	consoleCore := zapcore.NewCore(
-		zapcore.NewConsoleEncoder(consoleEncoderCfg),
-		zapcore.AddSync(os.Stdout),
-		zapcore.DebugLevel,
-	)
-
 	// Tee: console + kafka
 	logger := zap.New(
-		zapcore.NewTee(consoleCore, kafkaCore),
+		zapcore.NewTee(baseLogger.Core(), kafkaCore),
 		zap.AddCaller(),
 		zap.AddCallerSkip(0),
 	)
 
-	baseLogger.Info("kafka logging pipeline enabled",
+	baseLogger.Info("kafka connected",
 		zap.Strings("brokers", appCfg.Kafka.Brokers),
-		zap.String("topic", appCfg.Kafka.Topic),
 		zap.String("log_dir", appCfg.Kafka.LogDir),
 	)
 
-	// ── Start Kafka consumer (writes to log-<date>.log) ───────────────
 	consumer := kafka.NewLogConsumer(
 		appCfg.Kafka.Brokers,
 		appCfg.Kafka.Topic,
 		appCfg.Kafka.GroupID,
 		appCfg.Kafka.LogDir,
-		baseLogger, // use baseLogger for consumer itself to avoid circular logging
+		baseLogger,
 	)
 
 	consumerCtx, consumerCancel := context.WithCancel(context.Background())

@@ -12,6 +12,11 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	dockerLogDir   = "/apps/logs"
+	dockerFlagFile = "/.dockerenv"
+)
+
 type LogConsumer struct {
 	brokers []string
 	topic   string
@@ -23,14 +28,71 @@ type LogConsumer struct {
 }
 
 func NewLogConsumer(brokers []string, topic, groupID, logDir string, logger *zap.Logger) *LogConsumer {
+	resolvedDir := resolveLogDir(logDir, logger)
 	return &LogConsumer{
 		brokers: brokers,
 		topic:   topic,
 		groupID: groupID,
-		logDir:  logDir,
+		logDir:  resolvedDir,
 		logger:  logger,
 		files:   make(map[string]*os.File),
 	}
+}
+
+// resolveLogDir picks the correct log directory based on environment.
+func resolveLogDir(cfgDir string, logger *zap.Logger) string {
+	// ── Docker environment ────────────────────────────────────────────
+	if isDocker() {
+		if dirExists(dockerLogDir) {
+			logger.Info("docker environment detected",
+				zap.String("log_dir", dockerLogDir),
+			)
+			return dockerLogDir
+		}
+		logger.Warn("docker detected but /apps/logs missing, falling back to desktop",
+			zap.String("fallback", cfgDir),
+		)
+	}
+
+	// ── Local: use Desktop/logs ───────────────────────────────────────
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		logger.Warn("could not get home dir, using ./logs", zap.Error(err))
+		return "./logs"
+	}
+
+	desktopLogDir := filepath.Join(homeDir, "Desktop", "logs")
+
+	if dirExists(desktopLogDir) {
+		logger.Info("using existing desktop log dir",
+			zap.String("log_dir", desktopLogDir),
+		)
+		return desktopLogDir
+	}
+
+	// Create Desktop/logs if it doesn't exist
+	if err := os.MkdirAll(desktopLogDir, 0755); err != nil {
+		logger.Warn("could not create desktop log dir, falling back to ./logs",
+			zap.String("path", desktopLogDir),
+			zap.Error(err),
+		)
+		return "./logs"
+	}
+
+	logger.Info("created desktop log dir", zap.String("log_dir", desktopLogDir))
+	return desktopLogDir
+}
+
+// isDocker checks if running inside a Docker container.
+func isDocker() bool {
+	_, err := os.Stat(dockerFlagFile)
+	return err == nil
+}
+
+// dirExists checks if a directory exists and is accessible.
+func dirExists(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.IsDir()
 }
 
 func (c *LogConsumer) Start(ctx context.Context) error {
@@ -69,13 +131,17 @@ func (c *LogConsumer) Start(ctx context.Context) error {
 }
 
 // getFile returns an open file handle for the given date.
+// Creates the directory if it doesn't exist.
 func (c *LogConsumer) getFile(date string) (*os.File, error) {
 	if f, ok := c.files[date]; ok {
 		return f, nil
 	}
 
-	if err := os.MkdirAll(c.logDir, 0755); err != nil {
-		return nil, fmt.Errorf("creating log dir: %w", err)
+	if !dirExists(c.logDir) {
+		if err := os.MkdirAll(c.logDir, 0755); err != nil {
+			return nil, fmt.Errorf("creating log dir %s: %w", c.logDir, err)
+		}
+		c.logger.Info("created log dir", zap.String("log_dir", c.logDir))
 	}
 
 	filename := fmt.Sprintf("log-%s.log", date)
@@ -114,6 +180,8 @@ func (c *LogConsumer) closeAllFiles() {
 	}
 }
 
+// ── Sarama ConsumerGroupHandler ───────────────────────────────────────
+
 type consumerHandler struct {
 	consumer *LogConsumer
 }
@@ -123,7 +191,6 @@ func (h *consumerHandler) Cleanup(_ sarama.ConsumerGroupSession) error { return 
 
 func (h *consumerHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	for msg := range claim.Messages() {
-		// Key is the date set by producer
 		date := string(msg.Key)
 		if date == "" {
 			date = time.Now().UTC().Format("2006-01-02")
