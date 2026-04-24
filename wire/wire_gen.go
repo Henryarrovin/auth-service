@@ -22,7 +22,7 @@ func InitializeContainer(cfgFile string, logger *zap.Logger) (*handlers.AuthHand
 	if err != nil {
 		return nil, nil, err
 	}
-	db, err := data.NewDB(configConfig)
+	db, err := data.NewDB(configConfig, logger)
 	if err != nil {
 		return nil, nil, err
 	}
