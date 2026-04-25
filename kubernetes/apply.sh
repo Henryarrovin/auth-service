@@ -5,6 +5,18 @@ echo "Creating namespace..."
 kubectl apply -f namespace.yaml
 
 echo "Creating secrets..."
+# Generate .env.secrets if it doesn't exist
+if [ ! -f /workspace/.env.secrets ]; then
+    echo "▶ .env.secrets not found, generating..."
+    cat > /workspace/.env.secrets << EOF
+AUTH_DB_PASSWORD=postgres
+AUTH_JWT_ACCESS_SECRET=$(openssl rand -hex 32)
+AUTH_JWT_REFRESH_SECRET=$(openssl rand -hex 32)
+AUTH_JWT_CANONICAL_SECRET=$(openssl rand -hex 32)
+EOF
+    echo "Secrets generated"
+fi
+
 source /workspace/.env.secrets
 envsubst < secrets.yaml | kubectl apply -f -
 
