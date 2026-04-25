@@ -65,7 +65,7 @@ RUN sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/
 WORKDIR /workspace
 
 # ── Copy entrypoint ───────────────────────────────────────────────────
-COPY docker/server/entrypoint.sh /entrypoint.sh
+COPY docker-server/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 EXPOSE 22 8080 50051
