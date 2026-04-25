@@ -33,8 +33,7 @@ docker-run:
 	-v auth-server-docker:/var/lib/docker \
 	-v auth-minikube:/root/.minikube \
 	-v auth-kube:/root/.kube \
-	-v C:\Users\henry\Desktop\auth-service\kubernetes:/workspace/kubernetes \
-	-v C:\Users\henry\Desktop\auth-service\.env.secrets:/workspace/.env.secrets \
+	-v C:/Users/henry/Desktop/auth-service/kubernetes:/workspace/kubernetes \
 	auth-server
 
 .PHONY: wire proto run build docker-run
