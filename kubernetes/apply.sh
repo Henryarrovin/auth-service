@@ -17,8 +17,18 @@ EOF
     echo "Secrets generated"
 fi
 
-source /workspace/.env.secrets
-envsubst < secrets.yaml | kubectl apply -f -
+# Verify secrets file has content
+echo "Secrets file contents:"
+cat /workspace/.env.secrets
+
+# Create secret directly from file — no envsubst needed
+kubectl create secret generic auth-secrets \
+  --namespace auth \
+  --from-env-file=/workspace/.env.secrets \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+echo "Secret created"
+kubectl get secret auth-secrets -n auth
 
 echo "Creating configmap..."
 kubectl apply -f configmap.yaml
