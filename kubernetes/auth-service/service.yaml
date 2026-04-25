@@ -6,7 +6,7 @@ metadata:
 spec:
   selector:
     app: auth-service
-  type: LoadBalancer
+  type: ClusterIP
   ports:
     - name: http
       port: 8080

@@ -1,0 +1,31 @@
+version: "3.9"
+
+services:
+  server:
+    build:
+      context: ../../
+      dockerfile: docker/server/Dockerfile
+    container_name: auth-server
+    privileged: true
+    ports:
+      - "2222:22"       # SSH
+      - "8080:8080"     # HTTP → auth-service
+      - "50051:50051"   # gRPC → auth-service
+    volumes:
+      - ../../:/workspace              # mount project
+      - server-docker:/var/lib/docker  # docker storage
+      - minikube-data:/root/.minikube  # minikube state
+      - kube-config:/root/.kube        # kube config
+    environment:
+      - DOCKER_TLS_CERTDIR=
+    networks:
+      - server-net
+
+volumes:
+  server-docker:
+  minikube-data:
+  kube-config:
+
+networks:
+  server-net:
+    driver: bridge
