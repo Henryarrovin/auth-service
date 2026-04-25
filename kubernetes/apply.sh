@@ -2,35 +2,35 @@
 set -e
 
 echo "Creating namespace..."
-kubectl apply -f kubernetes/base/namespace.yaml
+kubectl apply -f namespace.yaml
 
 echo "Creating secrets..."
-source .env.secrets
-envsubst < kubernetes/base/secrets.yaml | kubectl apply -f -
+source /workspace/.env.secrets
+envsubst < secrets.yaml | kubectl apply -f -
 
 echo "Creating configmap..."
-kubectl apply -f kubernetes/base/configmap.yaml
+kubectl apply -f configmap.yaml
 
 echo "Deploying postgres..."
-kubectl apply -f kubernetes/postgres/pvc.yaml
-kubectl apply -f kubernetes/postgres/deployment.yaml
-kubectl apply -f kubernetes/postgres/service.yaml
+kubectl apply -f postgres/pvc.yaml
+kubectl apply -f postgres/deployment.yaml
+kubectl apply -f postgres/service.yaml
 
 echo "Deploying redis..."
-kubectl apply -f kubernetes/redis/pvc.yaml
-kubectl apply -f kubernetes/redis/deployment.yaml
-kubectl apply -f kubernetes/redis/service.yaml
+kubectl apply -f redis/pvc.yaml
+kubectl apply -f redis/deployment.yaml
+kubectl apply -f redis/service.yaml
 
 echo "Deploying zookeeper..."
-kubectl apply -f kubernetes/zookeeper/deployment.yaml
-kubectl apply -f kubernetes/zookeeper/service.yaml
+kubectl apply -f zookeeper/deployment.yaml
+kubectl apply -f zookeeper/service.yaml
 
 echo "Deploying kafka..."
-kubectl apply -f kubernetes/kafka/deployment.yaml
-kubectl apply -f kubernetes/kafka/service.yaml
+kubectl apply -f kafka/deployment.yaml
+kubectl apply -f kafka/service.yaml
 
 echo "Creating logs PVC..."
-kubectl apply -f kubernetes/logs/pvc.yaml
+kubectl apply -f logs/pvc.yaml
 
 echo "Waiting for postgres..."
 kubectl wait --namespace auth \
@@ -45,8 +45,8 @@ kubectl wait --namespace auth \
   --timeout=90s
 
 echo "Deploying auth-service..."
-kubectl apply -f kubernetes/auth-service/deployment.yaml
-kubectl apply -f kubernetes/auth-service/service.yaml
+kubectl apply -f auth-service/deployment.yaml
+kubectl apply -f auth-service/service.yaml
 
 echo "Done!"
 kubectl get all -n auth
