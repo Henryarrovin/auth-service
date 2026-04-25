@@ -23,4 +23,17 @@ build:
 wire:
 	cd wire && wire
 
-.PHONY: wire proto run build
+docker-run:
+	docker run -d \
+	--name auth-server \
+	--privileged \
+	-p 2222:22 \
+	-p 8080:8080 \
+	-p 50051:50051 \
+	-v auth-server-docker:/var/lib/docker \
+	-v auth-minikube:/root/.minikube \
+	-v auth-kube:/root/.kube \
+	-v C:/Users/henry/Desktop/auth-service/kubernetes:/workspace/kubernetes \
+	auth-server
+
+.PHONY: wire proto run build docker-run

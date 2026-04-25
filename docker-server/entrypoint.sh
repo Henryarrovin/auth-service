@@ -17,6 +17,7 @@ echo "✅ Docker ready"
 echo "▶ Starting Minikube..."
 minikube start \
     --driver=docker \
+    --force \
     --cpus=4 \
     --memory=4096 \
     --addons=ingress
