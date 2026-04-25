@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -80,8 +81,12 @@ func Load(cfgFile string) (*Config, error) {
 	v.SetDefault("redis.db", 0)
 	v.SetDefault("jwt.access_ttl", "15m")
 	v.SetDefault("jwt.refresh_ttl", "168h")
+	v.SetDefault("kafka.enabled", false)
+	v.SetDefault("kafka.topic", "auth-service-logs")
+	v.SetDefault("kafka.group_id", "auth-log-consumer")
+	v.SetDefault("kafka.log_dir", "./logs")
+	v.SetDefault("kafka.brokers", []string{"localhost:9092"})
 
-	// ── file ──────────────────────────────────────
 	if cfgFile != "" {
 		v.SetConfigFile(cfgFile)
 	} else {
@@ -91,7 +96,6 @@ func Load(cfgFile string) (*Config, error) {
 		v.AddConfigPath("./config")
 	}
 
-	// ── env ───────────────────────────────────────
 	v.SetEnvPrefix("AUTH")
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()
@@ -107,33 +111,75 @@ func Load(cfgFile string) (*Config, error) {
 		return nil, fmt.Errorf("unmarshalling config: %w", err)
 	}
 
-	// ── kafka ──────────────────────────────────
-	v.SetDefault("kafka.brokers", []string{"localhost:9092"})
-	v.SetDefault("kafka.topic", "auth-service-logs")
-	v.SetDefault("kafka.group_id", "auth-log-consumer")
-	v.SetDefault("kafka.log_dir", "./logs")
-	v.SetDefault("kafka.enabled", false)
-
-	// manually read kafka fields from env
-	// Viper doesn't handle []string and bool from env vars reliably
-	if enabled := os.Getenv("AUTH_KAFKA_ENABLED"); enabled == "true" {
-		cfg.Kafka.Enabled = true
+	// ── Manually read ALL env vars ────────────────
+	// Viper AutomaticEnv is unreliable with nested structs
+	if v := os.Getenv("AUTH_DB_HOST"); v != "" {
+		cfg.Database.Host = v
 	}
-
-	if brokers := os.Getenv("AUTH_KAFKA_BROKERS"); brokers != "" {
-		cfg.Kafka.Brokers = strings.Split(brokers, ",")
+	if v := os.Getenv("AUTH_DB_PORT"); v != "" {
+		p, _ := strconv.Atoi(v)
+		cfg.Database.Port = p
 	}
-
-	if topic := os.Getenv("AUTH_KAFKA_TOPIC"); topic != "" {
-		cfg.Kafka.Topic = topic
+	if v := os.Getenv("AUTH_DB_USER"); v != "" {
+		cfg.Database.User = v
 	}
-
-	if groupID := os.Getenv("AUTH_KAFKA_GROUP_ID"); groupID != "" {
-		cfg.Kafka.GroupID = groupID
+	if v := os.Getenv("AUTH_DB_PASSWORD"); v != "" {
+		cfg.Database.Password = v
 	}
-
-	if logDir := os.Getenv("AUTH_KAFKA_LOG_DIR"); logDir != "" {
-		cfg.Kafka.LogDir = logDir
+	if v := os.Getenv("AUTH_DB_NAME"); v != "" {
+		cfg.Database.DBName = v
+	}
+	if v := os.Getenv("AUTH_DB_SSLMODE"); v != "" {
+		cfg.Database.SSLMode = v
+	}
+	if v := os.Getenv("AUTH_REDIS_ADDR"); v != "" {
+		cfg.Redis.Addr = v
+	}
+	if v := os.Getenv("AUTH_REDIS_PASSWORD"); v != "" {
+		cfg.Redis.Password = v
+	}
+	if v := os.Getenv("AUTH_REDIS_DB"); v != "" {
+		d, _ := strconv.Atoi(v)
+		cfg.Redis.DB = d
+	}
+	if v := os.Getenv("AUTH_SERVER_GRPC_PORT"); v != "" {
+		p, _ := strconv.Atoi(v)
+		cfg.Server.GRPCPort = p
+	}
+	if v := os.Getenv("AUTH_SERVER_ENV"); v != "" {
+		cfg.Server.Env = v
+	}
+	if v := os.Getenv("AUTH_JWT_ACCESS_SECRET"); v != "" {
+		cfg.JWT.AccessSecret = v
+	}
+	if v := os.Getenv("AUTH_JWT_REFRESH_SECRET"); v != "" {
+		cfg.JWT.RefreshSecret = v
+	}
+	if v := os.Getenv("AUTH_JWT_CANONICAL_SECRET"); v != "" {
+		cfg.JWT.CanonicalSecret = v
+	}
+	if v := os.Getenv("AUTH_JWT_ACCESS_TTL"); v != "" {
+		d, _ := time.ParseDuration(v)
+		cfg.JWT.AccessTTL = d
+	}
+	if v := os.Getenv("AUTH_JWT_REFRESH_TTL"); v != "" {
+		d, _ := time.ParseDuration(v)
+		cfg.JWT.RefreshTTL = d
+	}
+	if v := os.Getenv("AUTH_KAFKA_ENABLED"); v != "" {
+		cfg.Kafka.Enabled = v == "true"
+	}
+	if v := os.Getenv("AUTH_KAFKA_BROKERS"); v != "" {
+		cfg.Kafka.Brokers = strings.Split(v, ",")
+	}
+	if v := os.Getenv("AUTH_KAFKA_TOPIC"); v != "" {
+		cfg.Kafka.Topic = v
+	}
+	if v := os.Getenv("AUTH_KAFKA_GROUP_ID"); v != "" {
+		cfg.Kafka.GroupID = v
+	}
+	if v := os.Getenv("AUTH_KAFKA_LOG_DIR"); v != "" {
+		cfg.Kafka.LogDir = v
 	}
 
 	return &cfg, nil
