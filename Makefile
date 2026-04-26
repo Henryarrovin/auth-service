@@ -28,6 +28,7 @@ docker-run:
 	--name auth-server \
 	--privileged \
 	-p 2222:22 \
+	-p 80:80 \
 	-p 8080:8080 \
 	-p 50051:50051 \
 	-v auth-server-docker:/var/lib/docker \
