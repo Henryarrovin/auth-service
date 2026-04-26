@@ -5,15 +5,10 @@ metadata:
   namespace: auth
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
-    # gRPC support
-    nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
-    nginx.ingress.kubernetes.io/grpc-backend: "true"
 spec:
   ingressClassName: nginx
   rules:
-    # HTTP routes
-    - host: auth.local
-      http:
+    - http:
         paths:
           - path: /api
             pathType: Prefix
@@ -22,14 +17,3 @@ spec:
                 name: auth-service
                 port:
                   number: 8080
-    # gRPC routes
-    - host: grpc.auth.local
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: auth-service
-                port:
-                  number: 50051
