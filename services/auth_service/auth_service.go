@@ -1,14 +1,15 @@
 package auth_service
 
 import (
-	"auth-service/data"
-	"auth-service/middleware"
-	"auth-service/models"
-	"auth-service/services/jwt_service"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+
+	"github.com/Henryarrovin/auth-service/data"
+	"github.com/Henryarrovin/auth-service/middleware"
+	"github.com/Henryarrovin/auth-service/models"
+	"github.com/Henryarrovin/auth-service/services/jwt_service"
 
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"

@@ -7,11 +7,11 @@
 package wire
 
 import (
-	"auth-service/config"
-	"auth-service/data"
-	"auth-service/handlers"
-	"auth-service/services/auth_service"
-	"auth-service/services/jwt_service"
+	"github.com/Henryarrovin/auth-service/config"
+	"github.com/Henryarrovin/auth-service/data"
+	"github.com/Henryarrovin/auth-service/handlers"
+	"github.com/Henryarrovin/auth-service/services/auth_service"
+	"github.com/Henryarrovin/auth-service/services/jwt_service"
 	"go.uber.org/zap"
 )
 

@@ -1,10 +1,11 @@
 package data
 
 import (
-	"auth-service/config"
 	"context"
 	"fmt"
 	"time"
+
+	"github.com/Henryarrovin/auth-service/config"
 
 	"github.com/redis/go-redis/v9"
 )

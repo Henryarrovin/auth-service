@@ -1,10 +1,6 @@
 package main
 
 import (
-	"auth-service/config"
-	kafka "auth-service/kafka_logger_pipeline"
-	"auth-service/middleware"
-	"auth-service/wire"
 	"context"
 	"flag"
 	"fmt"
@@ -15,7 +11,12 @@ import (
 	"syscall"
 	"time"
 
-	authpb "auth-service/proto/authpb"
+	"github.com/Henryarrovin/auth-service/config"
+	kafka "github.com/Henryarrovin/auth-service/kafka_logger_pipeline"
+	"github.com/Henryarrovin/auth-service/middleware"
+	"github.com/Henryarrovin/auth-service/wire"
+
+	authpb "github.com/Henryarrovin/auth-service/proto/authpb"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/joho/godotenv"

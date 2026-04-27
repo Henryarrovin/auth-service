@@ -1,9 +1,10 @@
 package data
 
 import (
-	"auth-service/config"
-	"auth-service/models"
 	"fmt"
+
+	"github.com/Henryarrovin/auth-service/config"
+	"github.com/Henryarrovin/auth-service/models"
 
 	"go.uber.org/zap"
 	"gorm.io/driver/postgres"

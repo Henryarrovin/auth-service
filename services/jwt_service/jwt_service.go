@@ -1,14 +1,15 @@
 package jwt_service
 
 import (
-	"auth-service/config"
-	"auth-service/models"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/Henryarrovin/auth-service/config"
+	"github.com/Henryarrovin/auth-service/models"
 
 	"github.com/golang-jwt/jwt/v5"
 )

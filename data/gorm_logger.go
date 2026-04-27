@@ -1,11 +1,12 @@
 package data
 
 import (
-	"auth-service/middleware"
 	"context"
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/Henryarrovin/auth-service/middleware"
 
 	"go.uber.org/zap"
 	"gorm.io/gorm/logger"

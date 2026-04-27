@@ -1,9 +1,10 @@
 package data
 
 import (
-	"auth-service/models"
 	"context"
 	"fmt"
+
+	"github.com/Henryarrovin/auth-service/models"
 
 	"gorm.io/gorm"
 )

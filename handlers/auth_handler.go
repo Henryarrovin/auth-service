@@ -1,11 +1,12 @@
 package handlers
 
 import (
-	"auth-service/middleware"
-	"auth-service/services/auth_service"
 	"context"
 
-	authpb "auth-service/proto/authpb"
+	"github.com/Henryarrovin/auth-service/middleware"
+	"github.com/Henryarrovin/auth-service/services/auth_service"
+
+	authpb "github.com/Henryarrovin/auth-service/proto/authpb"
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"

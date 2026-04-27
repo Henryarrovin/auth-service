@@ -1,8 +1,8 @@
 package services
 
 import (
-	"auth-service/services/auth_service"
-	"auth-service/services/jwt_service"
+	"github.com/Henryarrovin/auth-service/services/auth_service"
+	"github.com/Henryarrovin/auth-service/services/jwt_service"
 
 	"github.com/google/wire"
 )
