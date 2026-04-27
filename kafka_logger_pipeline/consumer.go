@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"time"
 
@@ -13,7 +14,12 @@ import (
 )
 
 const (
-	dockerLogDir   = "/apps/logs"
+	// Logs land at:
+	//   Windows : C:\Users\<user>\Desktop\logs\auth-service\log-YYYY-MM-DD.log
+	//   Linux   : ~/Desktop/logs/auth-service/log-YYYY-MM-DD.log  (dev)
+	//   Server  : /apps/logs/auth-service/log-YYYY-MM-DD.log      (k8s PVC)
+	serviceName    = "auth-service"
+	dockerLogBase  = "/apps/logs"
 	dockerFlagFile = "/.dockerenv"
 )
 
@@ -21,14 +27,14 @@ type LogConsumer struct {
 	brokers []string
 	topic   string
 	groupID string
-	logDir  string
+	logDir  string // fully resolved, service-specific dir
 	logger  *zap.Logger
 	files   map[string]*os.File
 	mu      sync.Mutex
 }
 
 func NewLogConsumer(brokers []string, topic, groupID, logDir string, logger *zap.Logger) *LogConsumer {
-	resolvedDir := resolveLogDir(logDir, logger)
+	resolvedDir := resolveLogDir(serviceName, logger)
 	return &LogConsumer{
 		brokers: brokers,
 		topic:   topic,
@@ -39,60 +45,76 @@ func NewLogConsumer(brokers []string, topic, groupID, logDir string, logger *zap
 	}
 }
 
-// resolveLogDir picks the correct log directory based on environment.
-func resolveLogDir(cfgDir string, logger *zap.Logger) string {
-	// ── Docker environment ────────────────────────────────────────────
+//	Server / Docker (k8s PVC):
+//	  /apps/logs/auth-service/
+//
+//	Linux desktop (dev):
+//	  ~/Desktop/logs/auth-service/
+//
+//	Windows (dev):
+//	  C:\Users\<user>\Desktop\logs\auth-service\
+//
+// The service subfolder is always created automatically.
+func resolveLogDir(service string, logger *zap.Logger) string {
 	if isDocker() {
-		if dirExists(dockerLogDir) {
-			logger.Info("docker environment detected",
-				zap.String("log_dir", dockerLogDir),
+		dir := filepath.Join(dockerLogBase, service)
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			logger.Warn("server: could not create log dir, falling back to cwd",
+				zap.String("path", dir),
+				zap.Error(err),
 			)
-			return dockerLogDir
+			return ensureDir(filepath.Join(".", "logs", service), logger)
 		}
-		logger.Warn("docker detected but /apps/logs missing, falling back to desktop",
-			zap.String("fallback", cfgDir),
+		logger.Info("server environment detected",
+			zap.String("log_dir", dir),
 		)
+		return dir
 	}
 
-	// ── Local: use Desktop/logs ───────────────────────────────────────
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		logger.Warn("could not get home dir, using ./logs", zap.Error(err))
-		return "./logs"
+		return ensureDir(filepath.Join(".", "logs", service), logger)
 	}
 
-	desktopLogDir := filepath.Join(homeDir, "Desktop", "logs")
+	// Windows:  C:\Users\<user>\Desktop\logs\auth-service
+	// Linux:    /home/<user>/Desktop/logs/auth-service
+	// macOS:    /Users/<user>/Desktop/logs/auth-service
+	desktopDir := filepath.Join(homeDir, "Desktop", "logs", service)
 
-	if dirExists(desktopLogDir) {
-		logger.Info("using existing desktop log dir",
-			zap.String("log_dir", desktopLogDir),
+	if runtime.GOOS == "windows" {
+		// On Windows, Desktop is always directly under the home dir
+		logger.Info("windows dev environment detected",
+			zap.String("log_dir", desktopDir),
 		)
-		return desktopLogDir
-	}
-
-	// Create Desktop/logs if it doesn't exist
-	if err := os.MkdirAll(desktopLogDir, 0755); err != nil {
-		logger.Warn("could not create desktop log dir, falling back to ./logs",
-			zap.String("path", desktopLogDir),
-			zap.Error(err),
+	} else {
+		logger.Info("linux/mac dev environment detected",
+			zap.String("log_dir", desktopDir),
 		)
-		return "./logs"
 	}
 
-	logger.Info("created desktop log dir", zap.String("log_dir", desktopLogDir))
-	return desktopLogDir
+	return ensureDir(desktopDir, logger)
 }
 
-// isDocker checks if running inside a Docker container.
+// ensureDir creates the directory (and all parents) if it doesn't exist.
+func ensureDir(dir string, logger *zap.Logger) string {
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		logger.Warn("could not create log dir, using ./logs",
+			zap.String("path", dir),
+			zap.Error(err),
+		)
+		fallback := filepath.Join(".", "logs", serviceName)
+		_ = os.MkdirAll(fallback, 0755)
+		return fallback
+	}
+	logger.Info("log dir ready", zap.String("log_dir", dir))
+	return dir
+}
+
+// isDocker returns true when running inside a Docker container (k8s pod).
 func isDocker() bool {
 	_, err := os.Stat(dockerFlagFile)
 	return err == nil
-}
-
-// dirExists checks if a directory exists and is accessible.
-func dirExists(path string) bool {
-	info, err := os.Stat(path)
-	return err == nil && info.IsDir()
 }
 
 func (c *LogConsumer) Start(ctx context.Context) error {
@@ -130,18 +152,10 @@ func (c *LogConsumer) Start(ctx context.Context) error {
 	}
 }
 
-// getFile returns an open file handle for the given date.
-// Creates the directory if it doesn't exist.
+// getFile returns (or opens) the daily log file for a given date string.
 func (c *LogConsumer) getFile(date string) (*os.File, error) {
 	if f, ok := c.files[date]; ok {
 		return f, nil
-	}
-
-	if !dirExists(c.logDir) {
-		if err := os.MkdirAll(c.logDir, 0755); err != nil {
-			return nil, fmt.Errorf("creating log dir %s: %w", c.logDir, err)
-		}
-		c.logger.Info("created log dir", zap.String("log_dir", c.logDir))
 	}
 
 	filename := fmt.Sprintf("log-%s.log", date)
@@ -180,14 +194,18 @@ func (c *LogConsumer) closeAllFiles() {
 	}
 }
 
-// ── Sarama ConsumerGroupHandler ───────────────────────────────────────
+// ── Sarama ConsumerGroupHandler ───────────────────────────────────────────────
 
 type consumerHandler struct {
 	consumer *LogConsumer
 }
 
-func (h *consumerHandler) Setup(_ sarama.ConsumerGroupSession) error   { return nil }
-func (h *consumerHandler) Cleanup(_ sarama.ConsumerGroupSession) error { return nil }
+func (h *consumerHandler) Setup(_ sarama.ConsumerGroupSession) error {
+	return nil
+}
+func (h *consumerHandler) Cleanup(_ sarama.ConsumerGroupSession) error {
+	return nil
+}
 
 func (h *consumerHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	for msg := range claim.Messages() {
