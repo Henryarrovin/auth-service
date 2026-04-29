@@ -57,6 +57,9 @@ nohup socat TCP-LISTEN:50051,fork,reuseaddr TCP:$MINIKUBE_IP:30051 > /tmp/socat-
 nohup socat TCP-LISTEN:8081,fork,reuseaddr TCP:$MINIKUBE_IP:30081 > /tmp/socat-payment-http.log 2>&1 &
 nohup socat TCP-LISTEN:50052,fork,reuseaddr TCP:$MINIKUBE_IP:30052 > /tmp/socat-payment-grpc.log 2>&1 &
 
+# Ingress
+nohup socat TCP-LISTEN:80,fork,reuseaddr TCP:$MINIKUBE_IP:80 > /tmp/socat-ingress.log 2>&1 &
+
 echo "✅ Server ready!"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  SSH:  ssh root@localhost -p 2222  (password: root)"
