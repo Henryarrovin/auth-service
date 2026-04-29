@@ -3,13 +3,15 @@ kind: Ingress
 metadata:
   name: mock-razorpay-ingress
   namespace: auth
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
 spec:
   ingressClassName: nginx
   rules:
     - http:
         paths:
           - path: /mock(/|$)(.*)
-            pathType: Prefix
+            pathType: ImplementationSpecific
             backend:
               service:
                 name: mock-razorpay-service
