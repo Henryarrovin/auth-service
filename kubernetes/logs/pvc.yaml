@@ -9,7 +9,7 @@ spec:
     - ReadWriteMany
   storageClassName: ""
   hostPath:
-    path: /workspace/logs
+    path: /apps/logs
   persistentVolumeReclaimPolicy: Retain
 
 ---
