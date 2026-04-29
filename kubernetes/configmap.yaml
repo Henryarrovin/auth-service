@@ -20,7 +20,7 @@ data:
   AUTH_KAFKA_BROKERS: "kafka-service:9092"
   AUTH_KAFKA_TOPIC: "auth-service-logs"
   AUTH_KAFKA_GROUP_ID: "auth-log-consumer"
-  AUTH_KAFKA_LOG_DIR: "/apps/logs"
+  AUTH_KAFKA_LOG_DIR: "/workspace/logs"
 
 ---
 
@@ -47,4 +47,4 @@ data:
   PAYMENT_KAFKA_BROKERS: "kafka-service:9092"
   PAYMENT_KAFKA_TOPIC: "payment-gateway-logs"
   PAYMENT_KAFKA_GROUP_ID: "payment-log-consumer"
-  PAYMENT_KAFKA_LOG_DIR: "/apps/logs"
+  PAYMENT_KAFKA_LOG_DIR: "/workspace/logs"
