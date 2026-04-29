@@ -105,3 +105,6 @@ kubectl apply -f payment-service/ingress.yaml
 
 echo "Done!"
 kubectl get all -n auth
+
+echo "▶ Starting port forward for ingress-nginx-controller..."
+kubectl port-forward -n ingress-nginx svc/ingress-nginx-controller 80:80 --address 0.0.0.0 &
