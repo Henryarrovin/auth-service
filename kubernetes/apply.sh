@@ -5,11 +5,9 @@ echo "Creating namespace..."
 kubectl apply -f namespace.yaml
 
 echo "Creating secrets..."
-# Generate .env.secrets if it doesn't exist
 if [ ! -f /workspace/.env.secrets ]; then
     echo "▶ .env.secrets not found, generating..."
 
-    # Generate shared canonical secret — must be same for both services
     CANONICAL_SECRET=$(openssl rand -hex 32)
 
     cat > /workspace/.env.secrets << EOF
@@ -76,7 +74,6 @@ kubectl wait --namespace auth \
   --selector=app=kafka \
   --timeout=90s
 
-# Create payment_db if it doesn't exist
 echo "Creating payment_db database..."
 kubectl exec -n auth deployment/postgres -- \
   psql -U postgres -tc "SELECT 1 FROM pg_database WHERE datname='payment_db'" | \
@@ -84,7 +81,6 @@ kubectl exec -n auth deployment/postgres -- \
   kubectl exec -n auth deployment/postgres -- \
   psql -U postgres -c "CREATE DATABASE payment_db;"
 
-# Create auth_db if it doesn't exist
 echo "Creating auth_db database..."
 kubectl exec -n auth deployment/postgres -- \
   psql -U postgres -tc "SELECT 1 FROM pg_database WHERE datname='auth_db'" | \
@@ -95,11 +91,16 @@ kubectl exec -n auth deployment/postgres -- \
 echo "Deploying auth-service..."
 kubectl apply -f auth-service/deployment.yaml
 kubectl apply -f auth-service/service.yaml
-kubectl apply -f auth-service/ingress.yaml
 
 echo "Deploying payment-gateway..."
 kubectl apply -f payment-service/deployment.yaml
 kubectl apply -f payment-service/service.yaml
+
+echo "Removing ingress admission webhook..."
+kubectl delete validatingwebhookconfiguration ingress-nginx-admission --ignore-not-found=true
+
+echo "Applying ingresses..."
+kubectl apply -f auth-service/ingress.yaml
 kubectl apply -f payment-service/ingress.yaml
 
 echo "Done!"
