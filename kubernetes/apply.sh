@@ -103,6 +103,10 @@ echo "Applying ingresses..."
 kubectl apply -f auth-service/ingress.yaml
 kubectl apply -f payment-service/ingress.yaml
 
+echo "Deploying mock razorpay server..."
+kubectl apply -f mock-razorpay/deployment.yaml
+kubectl apply -f mock-razorpay/service.yaml
+
 echo "Done!"
 kubectl get all -n auth
 
