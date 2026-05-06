@@ -2,7 +2,9 @@
 docker pull henryarrovin/auth-service
 
 // to run the server
+
 docker build -t auth-server .
+
 docker run -d \
   --name auth-server \
   --privileged \
