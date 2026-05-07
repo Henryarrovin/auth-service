@@ -33,7 +33,7 @@ spec:
             - name: OLLAMA_URL
               value: "http://ollama-service:11434"
             - name: OLLAMA_MODEL
-              value: "llama3.2"
+              value: "qwen2.5:1.5b"
             - name: MCP_KAFKA_ENABLED
               value: "true"
             - name: MCP_KAFKA_BROKERS
