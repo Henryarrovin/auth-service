@@ -85,7 +85,7 @@ kubectl wait --namespace auth \
   --selector=app=ollama \
   --timeout=120s
  
-echo "Pulling llama3.2 model (this takes a few minutes on first run)..."
+echo "Pulling qwen2.5:1.5b model (this takes a few minutes on first run)..."
 kubectl apply -f ollama/pull-model-job.yaml
 
 echo "Creating payment_db database..."
