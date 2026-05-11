@@ -49,16 +49,21 @@ spec:
           volumeMounts:
             - name: logs-storage
               mountPath: /apps/logs
+          startupProbe:
+            tcpSocket:
+              port: 8080
+            periodSeconds: 5
+            failureThreshold: 30
           readinessProbe:
             tcpSocket:
               port: 8080
-            initialDelaySeconds: 10
             periodSeconds: 5
+            failureThreshold: 5
           livenessProbe:
             tcpSocket:
               port: 8080
-            initialDelaySeconds: 15
             periodSeconds: 10
+            failureThreshold: 3
       volumes:
         - name: logs-storage
           persistentVolumeClaim:
