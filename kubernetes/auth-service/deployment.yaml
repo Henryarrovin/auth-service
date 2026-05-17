@@ -13,6 +13,8 @@ spec:
       labels:
         app: auth-service
     spec:
+      nodeSelector:
+          kubernetes.io/hostname: worker1
       containers:
         - name: auth-service
           image: henryarrovin/auth-service:latest
