@@ -54,6 +54,20 @@ service AuthService {
       get: "/api/v1/auth/roles/{user_id}"
     };
   }
+
+  rpc ForgotPassword (ForgotPasswordRequest) returns (ForgotPasswordResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/forgot-password"
+      body: "*"
+    };
+  }
+
+  rpc ResetPassword (ResetPasswordRequest) returns (ResetPasswordResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/reset-password"
+      body: "*"
+    };
+  }
 }
 
 message Role {
@@ -137,4 +151,22 @@ message GetUserRolesRequest {
 
 message GetUserRolesResponse {
   repeated Role roles = 1;
+}
+
+message ForgotPasswordRequest {
+  string email = 1;
+}
+
+message ForgotPasswordResponse {
+  string message = 1;
+}
+
+message ResetPasswordRequest {
+  string token = 1;
+  string new_password = 2;
+}
+
+message ResetPasswordResponse {
+  bool   success = 1;
+  string message = 2;
 }
