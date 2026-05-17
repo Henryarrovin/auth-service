@@ -77,3 +77,24 @@ func (s *TokenStore) IsBlocked(ctx context.Context, jti string) (bool, error) {
 	n, err := s.rdb.Exists(ctx, "blocklist:"+jti).Result()
 	return n > 0, err
 }
+
+// SaveResetToken stores a password reset token with 15min TTL
+func (s *TokenStore) SaveResetToken(ctx context.Context, email, token string) error {
+	key := fmt.Sprintf("reset:%s", token)
+	return s.rdb.Set(ctx, key, email, 15*time.Minute).Err()
+}
+
+// GetResetToken returns the email associated with a reset token
+func (s *TokenStore) GetResetToken(ctx context.Context, token string) (string, error) {
+	key := fmt.Sprintf("reset:%s", token)
+	email, err := s.rdb.Get(ctx, key).Result()
+	if err == redis.Nil {
+		return "", fmt.Errorf("reset token expired or invalid")
+	}
+	return email, err
+}
+
+// DeleteResetToken removes the reset token after use
+func (s *TokenStore) DeleteResetToken(ctx context.Context, token string) error {
+	return s.rdb.Del(ctx, fmt.Sprintf("reset:%s", token)).Err()
+}
