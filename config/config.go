@@ -18,12 +18,22 @@ type KafkaConfig struct {
 	Enabled bool     `mapstructure:"enabled"`
 }
 
+type EmailConfig struct {
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+	From     string `mapstructure:"from"`
+	BaseURL  string `mapstructure:"base_url"`
+}
+
 type Config struct {
 	Server   ServerConfig
 	Database DatabaseConfig
 	Redis    RedisConfig
 	JWT      JWTConfig
 	Kafka    KafkaConfig
+	Email    EmailConfig
 }
 
 type ServerConfig struct {
@@ -86,6 +96,9 @@ func Load(cfgFile string) (*Config, error) {
 	v.SetDefault("kafka.group_id", "auth-log-consumer")
 	v.SetDefault("kafka.log_dir", "./logs")
 	v.SetDefault("kafka.brokers", []string{"localhost:9092"})
+	v.SetDefault("email.host", "smtp.gmail.com")
+	v.SetDefault("email.port", 587)
+	v.SetDefault("email.base_url", "http://localhost:3000")
 
 	if cfgFile != "" {
 		v.SetConfigFile(cfgFile)
@@ -180,6 +193,25 @@ func Load(cfgFile string) (*Config, error) {
 	}
 	if v := os.Getenv("AUTH_KAFKA_LOG_DIR"); v != "" {
 		cfg.Kafka.LogDir = v
+	}
+	if v := os.Getenv("AUTH_EMAIL_HOST"); v != "" {
+		cfg.Email.Host = v
+	}
+	if v := os.Getenv("AUTH_EMAIL_PORT"); v != "" {
+		p, _ := strconv.Atoi(v)
+		cfg.Email.Port = p
+	}
+	if v := os.Getenv("AUTH_EMAIL_USERNAME"); v != "" {
+		cfg.Email.Username = v
+	}
+	if v := os.Getenv("AUTH_EMAIL_PASSWORD"); v != "" {
+		cfg.Email.Password = v
+	}
+	if v := os.Getenv("AUTH_EMAIL_FROM"); v != "" {
+		cfg.Email.From = v
+	}
+	if v := os.Getenv("AUTH_EMAIL_BASE_URL"); v != "" {
+		cfg.Email.BaseURL = v
 	}
 
 	return &cfg, nil
