@@ -84,3 +84,15 @@ func (r *UserRepository) GetRoles(ctx context.Context, userID string) ([]string,
 	}
 	return names, nil
 }
+
+func (r *UserRepository) UpdatePassword(ctx context.Context, userID, passwordHash string) error {
+	result := r.db.WithContext(ctx).
+		Model(&models.User{}).
+		Where("id = ?", userID).
+		Update("password_hash", passwordHash)
+
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
