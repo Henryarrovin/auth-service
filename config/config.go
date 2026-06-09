@@ -27,6 +27,17 @@ type EmailConfig struct {
 	BaseURL  string `mapstructure:"base_url"`
 }
 
+type OAuthConfig struct {
+	Google OAuthProviderConfig `mapstructure:"google"`
+	GitHub OAuthProviderConfig `mapstructure:"github"`
+}
+
+type OAuthProviderConfig struct {
+	ClientID     string `mapstructure:"client_id"`
+	ClientSecret string `mapstructure:"client_secret"`
+	RedirectURL  string `mapstructure:"redirect_url"`
+}
+
 type Config struct {
 	Server   ServerConfig
 	Database DatabaseConfig
@@ -34,6 +45,7 @@ type Config struct {
 	JWT      JWTConfig
 	Kafka    KafkaConfig
 	Email    EmailConfig
+	OAuth    OAuthConfig
 }
 
 type ServerConfig struct {
@@ -212,6 +224,25 @@ func Load(cfgFile string) (*Config, error) {
 	}
 	if v := os.Getenv("AUTH_EMAIL_BASE_URL"); v != "" {
 		cfg.Email.BaseURL = v
+	}
+	// OAuth env vars
+	if v := os.Getenv("AUTH_OAUTH_GOOGLE_CLIENT_ID"); v != "" {
+		cfg.OAuth.Google.ClientID = v
+	}
+	if v := os.Getenv("AUTH_OAUTH_GOOGLE_CLIENT_SECRET"); v != "" {
+		cfg.OAuth.Google.ClientSecret = v
+	}
+	if v := os.Getenv("AUTH_OAUTH_GOOGLE_REDIRECT_URL"); v != "" {
+		cfg.OAuth.Google.RedirectURL = v
+	}
+	if v := os.Getenv("AUTH_OAUTH_GITHUB_CLIENT_ID"); v != "" {
+		cfg.OAuth.GitHub.ClientID = v
+	}
+	if v := os.Getenv("AUTH_OAUTH_GITHUB_CLIENT_SECRET"); v != "" {
+		cfg.OAuth.GitHub.ClientSecret = v
+	}
+	if v := os.Getenv("AUTH_OAUTH_GITHUB_REDIRECT_URL"); v != "" {
+		cfg.OAuth.GitHub.RedirectURL = v
 	}
 
 	return &cfg, nil

@@ -98,3 +98,22 @@ func (s *TokenStore) GetResetToken(ctx context.Context, token string) (string, e
 func (s *TokenStore) DeleteResetToken(ctx context.Context, token string) error {
 	return s.rdb.Del(ctx, fmt.Sprintf("reset:%s", token)).Err()
 }
+
+// SaveOAuthState stores OAuth state for CSRF protection
+func (s *TokenStore) SaveOAuthState(ctx context.Context, state, provider string) error {
+	return s.rdb.Set(ctx, "oauth:state:"+state, provider, 10*time.Minute).Err()
+}
+
+// GetOAuthState retrieves the provider for a given state
+func (s *TokenStore) GetOAuthState(ctx context.Context, state string) (string, error) {
+	provider, err := s.rdb.Get(ctx, "oauth:state:"+state).Result()
+	if err == redis.Nil {
+		return "", fmt.Errorf("oauth state expired or invalid")
+	}
+	return provider, err
+}
+
+// DeleteOAuthState removes the state after use
+func (s *TokenStore) DeleteOAuthState(ctx context.Context, state string) error {
+	return s.rdb.Del(ctx, "oauth:state:"+state).Err()
+}

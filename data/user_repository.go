@@ -96,3 +96,30 @@ func (r *UserRepository) UpdatePassword(ctx context.Context, userID, passwordHas
 	}
 	return nil
 }
+
+// CreateOAuthUser creates a user without password (OAuth only)
+func (r *UserRepository) CreateOAuthUser(ctx context.Context, u *models.User) error {
+	var role models.Role
+	if err := r.db.WithContext(ctx).Where("name = ?", models.RoleUser).First(&role).Error; err != nil {
+		return fmt.Errorf("role not found: %w", err)
+	}
+
+	u.Roles = []models.Role{role}
+
+	if err := r.db.WithContext(ctx).Create(u).Error; err != nil {
+		return fmt.Errorf("create oauth user: %w", err)
+	}
+	return nil
+}
+
+// UpdateOAuthInfo links an OAuth provider to an existing local account
+func (r *UserRepository) UpdateOAuthInfo(ctx context.Context, userID, provider, providerID, avatarURL string) error {
+	return r.db.WithContext(ctx).
+		Model(&models.User{}).
+		Where("id = ?", userID).
+		Updates(map[string]any{
+			"provider":    provider,
+			"provider_id": providerID,
+			"avatar_url":  avatarURL,
+		}).Error
+}

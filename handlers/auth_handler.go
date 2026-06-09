@@ -5,6 +5,7 @@ import (
 
 	"github.com/Henryarrovin/auth-service/middleware"
 	"github.com/Henryarrovin/auth-service/services/auth_service"
+	"github.com/Henryarrovin/auth-service/services/oauth_service"
 
 	authpb "github.com/Henryarrovin/auth-service/proto/authpb"
 
@@ -16,11 +17,12 @@ import (
 type AuthHandler struct {
 	authpb.UnimplementedAuthServiceServer
 	svc    *auth_service.AuthService
+	oauth  *oauth_service.OAuthService
 	logger *zap.Logger
 }
 
-func NewAuthHandler(svc *auth_service.AuthService, logger *zap.Logger) *AuthHandler {
-	return &AuthHandler{svc: svc, logger: logger}
+func NewAuthHandler(svc *auth_service.AuthService, oauth *oauth_service.OAuthService, logger *zap.Logger) *AuthHandler {
+	return &AuthHandler{svc: svc, oauth: oauth, logger: logger}
 }
 
 func (h *AuthHandler) Register(ctx context.Context, req *authpb.RegisterRequest) (*authpb.RegisterResponse, error) {
@@ -207,5 +209,43 @@ func (h *AuthHandler) ResetPassword(ctx context.Context, req *authpb.ResetPasswo
 	return &authpb.ResetPasswordResponse{
 		Success: true,
 		Message: "password reset successfully",
+	}, nil
+}
+
+func (h *AuthHandler) OAuthLogin(ctx context.Context, req *authpb.OAuthLoginRequest) (*authpb.OAuthLoginResponse, error) {
+	log := middleware.FromContext(ctx, h.logger)
+
+	if req.Provider == "" {
+		return nil, status.Error(codes.InvalidArgument, "provider is required")
+	}
+
+	url, err := h.oauth.GetRedirectURL(ctx, req.Provider)
+	if err != nil {
+		log.Error("oauth redirect failed", zap.Error(err))
+		return nil, status.Errorf(codes.Internal, "oauth failed: %v", err)
+	}
+
+	return &authpb.OAuthLoginResponse{RedirectUrl: url}, nil
+}
+
+func (h *AuthHandler) OAuthCallback(ctx context.Context, req *authpb.OAuthCallbackRequest) (*authpb.OAuthCallbackResponse, error) {
+	log := middleware.FromContext(ctx, h.logger)
+
+	if req.Code == "" || req.State == "" {
+		return nil, status.Error(codes.InvalidArgument, "code and state are required")
+	}
+
+	result, err := h.oauth.HandleCallback(ctx, req.Provider, req.Code, req.State)
+	if err != nil {
+		log.Error("oauth callback failed", zap.Error(err))
+		return nil, status.Errorf(codes.Unauthenticated, "oauth failed: %v", err)
+	}
+
+	return &authpb.OAuthCallbackResponse{
+		AccessToken:  result.AccessToken,
+		RefreshToken: result.RefreshToken,
+		ExpiresIn:    result.ExpiresIn,
+		TokenType:    "Bearer",
+		IsNewUser:    result.IsNewUser,
 	}, nil
 }
