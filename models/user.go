@@ -18,7 +18,10 @@ type User struct {
 	ID           string `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 	Email        string `gorm:"uniqueIndex;not null"`
 	Name         string `gorm:"not null"`
-	PasswordHash string `gorm:"not null"`
+	PasswordHash string // empty for OAuth users
+	Provider     string `gorm:"default:'local'"` // "local" | "google" | "github"
+	ProviderID   string // OAuth provider's user ID
+	AvatarURL    string // profile picture from OAuth
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 	Roles        []Role `gorm:"many2many:user_roles;"`
@@ -49,4 +52,8 @@ func (u *User) RoleNames() []string {
 		names[i] = r.Name
 	}
 	return names
+}
+
+func (u *User) IsOAuthUser() bool {
+	return u.Provider != "local" && u.Provider != ""
 }
