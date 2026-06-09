@@ -171,3 +171,41 @@ func (h *AuthHandler) GetUserRoles(ctx context.Context, req *authpb.GetUserRoles
 
 	return &authpb.GetUserRolesResponse{Roles: roles}, nil
 }
+
+func (h *AuthHandler) ForgotPassword(ctx context.Context, req *authpb.ForgotPasswordRequest) (*authpb.ForgotPasswordResponse, error) {
+	log := middleware.FromContext(ctx, h.logger)
+
+	if req.Email == "" {
+		return nil, status.Error(codes.InvalidArgument, "email is required")
+	}
+
+	if err := h.svc.ForgotPassword(ctx, req.Email); err != nil {
+		log.Error("forgot password failed", zap.Error(err))
+		return nil, status.Errorf(codes.Internal, "failed to process request")
+	}
+
+	return &authpb.ForgotPasswordResponse{
+		Message: "if your email exists you will receive a reset link",
+	}, nil
+}
+
+func (h *AuthHandler) ResetPassword(ctx context.Context, req *authpb.ResetPasswordRequest) (*authpb.ResetPasswordResponse, error) {
+	log := middleware.FromContext(ctx, h.logger)
+
+	if req.Token == "" || req.NewPassword == "" {
+		return nil, status.Error(codes.InvalidArgument, "token and new_password are required")
+	}
+
+	if err := h.svc.ResetPassword(ctx, req.Token, req.NewPassword); err != nil {
+		log.Warn("reset password failed", zap.Error(err))
+		return &authpb.ResetPasswordResponse{
+			Success: false,
+			Message: err.Error(),
+		}, nil
+	}
+
+	return &authpb.ResetPasswordResponse{
+		Success: true,
+		Message: "password reset successfully",
+	}, nil
+}
