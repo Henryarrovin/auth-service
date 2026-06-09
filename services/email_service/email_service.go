@@ -4,24 +4,16 @@ import (
 	"fmt"
 	"net/smtp"
 
+	"github.com/Henryarrovin/auth-service/config"
 	"go.uber.org/zap"
 )
 
-type EmailConfig struct {
-	Host     string
-	Port     int
-	Username string
-	Password string
-	From     string
-	BaseURL  string
-}
-
 type EmailService struct {
-	cfg    EmailConfig
+	cfg    config.EmailConfig
 	logger *zap.Logger
 }
 
-func NewEmailService(cfg EmailConfig, logger *zap.Logger) *EmailService {
+func NewEmailService(cfg config.EmailConfig, logger *zap.Logger) *EmailService {
 	return &EmailService{cfg: cfg, logger: logger}
 }
 
