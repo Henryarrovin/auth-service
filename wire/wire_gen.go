@@ -13,6 +13,7 @@ import (
 	"github.com/Henryarrovin/auth-service/services/auth_service"
 	"github.com/Henryarrovin/auth-service/services/email_service"
 	"github.com/Henryarrovin/auth-service/services/jwt_service"
+	"github.com/Henryarrovin/auth-service/services/oauth_service"
 	"go.uber.org/zap"
 )
 
@@ -37,7 +38,9 @@ func InitializeContainer(cfgFile string, logger *zap.Logger) (*handlers.AuthHand
 	emailConfig := config.ProvideEmailConfig(configConfig)
 	emailService := email_service.NewEmailService(emailConfig, logger)
 	authService := auth_service.NewAuthService(userRepository, tokenStore, jwtService, emailService, logger)
-	authHandler := handlers.NewAuthHandler(authService, logger)
+	oAuthConfig := config.ProvideOAuthConfig(configConfig)
+	oAuthService := oauth_service.NewOAuthService(oAuthConfig, userRepository, tokenStore, jwtService, logger)
+	authHandler := handlers.NewAuthHandler(authService, oAuthService, logger)
 	return authHandler, func() {
 	}, nil
 }
