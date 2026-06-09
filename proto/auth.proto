@@ -68,6 +68,18 @@ service AuthService {
       body: "*"
     };
   }
+
+  rpc OAuthLogin (OAuthLoginRequest) returns (OAuthLoginResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/auth/oauth/{provider}"
+    };
+  }
+
+  rpc OAuthCallback (OAuthCallbackRequest) returns (OAuthCallbackResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/auth/oauth/{provider}/callback"
+    };
+  }
 }
 
 message Role {
@@ -169,4 +181,26 @@ message ResetPasswordRequest {
 message ResetPasswordResponse {
   bool   success = 1;
   string message = 2;
+}
+
+message OAuthLoginRequest {
+  string provider = 1; // "google" | "github"
+}
+
+message OAuthLoginResponse {
+  string redirect_url = 1;
+}
+
+message OAuthCallbackRequest {
+  string provider = 1;
+  string code     = 2;
+  string state    = 3;
+}
+
+message OAuthCallbackResponse {
+  string access_token  = 1;
+  string refresh_token = 2;
+  int64  expires_in    = 3;
+  string token_type    = 4;
+  bool   is_new_user   = 5;
 }
