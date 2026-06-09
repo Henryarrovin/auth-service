@@ -9,6 +9,7 @@ import (
 	"github.com/Henryarrovin/auth-service/data"
 	"github.com/Henryarrovin/auth-service/middleware"
 	"github.com/Henryarrovin/auth-service/models"
+	"github.com/Henryarrovin/auth-service/services/email_service"
 	"github.com/Henryarrovin/auth-service/services/jwt_service"
 
 	"go.uber.org/zap"
@@ -19,11 +20,18 @@ type AuthService struct {
 	users      *data.UserRepository
 	tokenStore *data.TokenStore
 	jwt        *jwt_service.JWTService
+	email      *email_service.EmailService
 	logger     *zap.Logger
 }
 
-func NewAuthService(users *data.UserRepository, tokenStore *data.TokenStore, jwt *jwt_service.JWTService, logger *zap.Logger) *AuthService {
-	return &AuthService{users: users, tokenStore: tokenStore, jwt: jwt, logger: logger}
+func NewAuthService(
+	users *data.UserRepository,
+	tokenStore *data.TokenStore,
+	jwt *jwt_service.JWTService,
+	email *email_service.EmailService,
+	logger *zap.Logger,
+) *AuthService {
+	return &AuthService{users: users, tokenStore: tokenStore, jwt: jwt, email: email, logger: logger}
 }
 
 func (s *AuthService) Register(ctx context.Context, in RegisterInput) (*models.User, error) {
@@ -204,6 +212,69 @@ func (s *AuthService) GetUserRoles(ctx context.Context, userID string) ([]string
 
 	log.Info("info.auth_service.got_user_roles", zap.String("user_id", userID), zap.Strings("roles", roles))
 	return roles, nil
+}
+
+func (s *AuthService) ForgotPassword(ctx context.Context, email string) error {
+	log := middleware.FromContext(ctx, s.logger)
+	log.Info("forgot password request", zap.String("email", email))
+
+	_, err := s.users.FindByEmail(ctx, email)
+	if err != nil {
+		log.Warn("forgot password for unknown email", zap.String("email", email))
+		return nil
+	}
+
+	token, err := randomHex(32)
+	if err != nil {
+		return fmt.Errorf("generating reset token: %w", err)
+	}
+
+	if err := s.tokenStore.SaveResetToken(ctx, email, token); err != nil {
+		return fmt.Errorf("saving reset token: %w", err)
+	}
+
+	if err := s.email.SendPasswordReset(email, token); err != nil {
+		return fmt.Errorf("sending reset email: %w", err)
+	}
+
+	log.Info("password reset email sent", zap.String("email", email))
+	return nil
+}
+
+func (s *AuthService) ResetPassword(ctx context.Context, token, newPassword string) error {
+	log := middleware.FromContext(ctx, s.logger)
+	log.Info("reset password attempt")
+
+	email, err := s.tokenStore.GetResetToken(ctx, token)
+	if err != nil {
+		log.Warn("invalid or expired reset token", zap.Error(err))
+		return fmt.Errorf("invalid or expired reset token")
+	}
+
+	user, err := s.users.FindByEmail(ctx, email)
+	if err != nil {
+		return fmt.Errorf("user not found")
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("hashing password: %w", err)
+	}
+
+	if err := s.users.UpdatePassword(ctx, user.ID, string(hash)); err != nil {
+		log.Error("updating password failed", zap.Error(err))
+		return fmt.Errorf("updating password: %w", err)
+	}
+
+	_ = s.tokenStore.DeleteResetToken(ctx, token)
+
+	_ = s.tokenStore.RevokeAll(ctx, user.ID)
+
+	log.Info("password reset successful",
+		zap.String("user_id", user.ID),
+		zap.String("email", email),
+	)
+	return nil
 }
 
 func (s *AuthService) issuePair(ctx context.Context, user *models.User) (*TokenPair, error) {

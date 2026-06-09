@@ -98,7 +98,7 @@ func Load(cfgFile string) (*Config, error) {
 	v.SetDefault("kafka.brokers", []string{"localhost:9092"})
 	v.SetDefault("email.host", "smtp.gmail.com")
 	v.SetDefault("email.port", 587)
-	v.SetDefault("email.base_url", "http://localhost:3000")
+	v.SetDefault("email.base_url", "http://localhost:8080")
 
 	if cfgFile != "" {
 		v.SetConfigFile(cfgFile)
