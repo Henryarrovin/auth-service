@@ -8,10 +8,10 @@ import (
 
 var ProviderSet = wire.NewSet(NewTOTPService, ProvideTOTPIssuer)
 
-func ProvideTOTPIssuer() string {
+func ProvideTOTPIssuer() TOTPIssuer {
 	issuer := os.Getenv("AUTH_TOTP_ISSUER")
 	if issuer == "" {
 		return "auth-service"
 	}
-	return issuer
+	return TOTPIssuer(issuer)
 }

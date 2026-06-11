@@ -14,6 +14,7 @@ import (
 	"github.com/Henryarrovin/auth-service/services/email_service"
 	"github.com/Henryarrovin/auth-service/services/jwt_service"
 	"github.com/Henryarrovin/auth-service/services/oauth_service"
+	"github.com/Henryarrovin/auth-service/services/totp_service"
 	"go.uber.org/zap"
 )
 
@@ -35,9 +36,11 @@ func InitializeContainer(cfgFile string, logger *zap.Logger) (*handlers.AuthHand
 	}
 	jwtConfig := config.ProvideJWTConfig(configConfig)
 	jwtService := jwt_service.NewJWTService(jwtConfig)
+	totpIssuer := totp_service.ProvideTOTPIssuer()
+	totpService := totp_service.NewTOTPService(totpIssuer, logger)
 	emailConfig := config.ProvideEmailConfig(configConfig)
 	emailService := email_service.NewEmailService(emailConfig, logger)
-	authService := auth_service.NewAuthService(userRepository, tokenStore, jwtService, emailService, logger)
+	authService := auth_service.NewAuthService(userRepository, tokenStore, jwtService, totpService, emailService, logger)
 	oAuthConfig := config.ProvideOAuthConfig(configConfig)
 	oAuthService := oauth_service.NewOAuthService(oAuthConfig, userRepository, tokenStore, jwtService, logger)
 	authHandler := handlers.NewAuthHandler(authService, oAuthService, logger)

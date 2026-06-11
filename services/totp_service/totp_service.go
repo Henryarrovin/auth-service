@@ -15,13 +15,15 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type TOTPIssuer string
+
 type TOTPService struct {
 	issuer string
 	logger *zap.Logger
 }
 
-func NewTOTPService(issuer string, logger *zap.Logger) *TOTPService {
-	return &TOTPService{issuer: issuer, logger: logger}
+func NewTOTPService(issuer TOTPIssuer, logger *zap.Logger) *TOTPService {
+	return &TOTPService{issuer: string(issuer), logger: logger}
 }
 
 // GenerateSecret creates a new TOTP secret for a user
