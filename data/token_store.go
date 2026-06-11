@@ -117,3 +117,23 @@ func (s *TokenStore) GetOAuthState(ctx context.Context, state string) (string, e
 func (s *TokenStore) DeleteOAuthState(ctx context.Context, state string) error {
 	return s.rdb.Del(ctx, "oauth:state:"+state).Err()
 }
+
+// SaveTempToken stores a temporary token after first factor auth
+// Used to track that user passed password check, waiting for OTP
+func (s *TokenStore) SaveTempToken(ctx context.Context, tempToken, userID string) error {
+	return s.rdb.Set(ctx, "2fa:temp:"+tempToken, userID, 5*time.Minute).Err()
+}
+
+// GetTempToken returns userID for a temp token
+func (s *TokenStore) GetTempToken(ctx context.Context, tempToken string) (string, error) {
+	userID, err := s.rdb.Get(ctx, "2fa:temp:"+tempToken).Result()
+	if err == redis.Nil {
+		return "", fmt.Errorf("temp token expired or invalid")
+	}
+	return userID, err
+}
+
+// DeleteTempToken removes temp token after OTP verified
+func (s *TokenStore) DeleteTempToken(ctx context.Context, tempToken string) error {
+	return s.rdb.Del(ctx, "2fa:temp:"+tempToken).Err()
+}

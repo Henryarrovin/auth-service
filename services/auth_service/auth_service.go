@@ -5,12 +5,14 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"strings"
 
 	"github.com/Henryarrovin/auth-service/data"
 	"github.com/Henryarrovin/auth-service/middleware"
 	"github.com/Henryarrovin/auth-service/models"
 	"github.com/Henryarrovin/auth-service/services/email_service"
 	"github.com/Henryarrovin/auth-service/services/jwt_service"
+	"github.com/Henryarrovin/auth-service/services/totp_service"
 
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
@@ -20,6 +22,7 @@ type AuthService struct {
 	users      *data.UserRepository
 	tokenStore *data.TokenStore
 	jwt        *jwt_service.JWTService
+	totp       *totp_service.TOTPService
 	email      *email_service.EmailService
 	logger     *zap.Logger
 }
@@ -28,10 +31,11 @@ func NewAuthService(
 	users *data.UserRepository,
 	tokenStore *data.TokenStore,
 	jwt *jwt_service.JWTService,
+	totp *totp_service.TOTPService,
 	email *email_service.EmailService,
 	logger *zap.Logger,
 ) *AuthService {
-	return &AuthService{users: users, tokenStore: tokenStore, jwt: jwt, email: email, logger: logger}
+	return &AuthService{users: users, tokenStore: tokenStore, jwt: jwt, totp: totp, email: email, logger: logger}
 }
 
 func (s *AuthService) Register(ctx context.Context, in RegisterInput) (*models.User, error) {
@@ -67,7 +71,7 @@ func (s *AuthService) Register(ctx context.Context, in RegisterInput) (*models.U
 	return user, nil
 }
 
-func (s *AuthService) Login(ctx context.Context, email, password string) (*TokenPair, error) {
+func (s *AuthService) Login(ctx context.Context, email, password string) (*LoginResult, error) {
 	log := middleware.FromContext(ctx, s.logger)
 	log.Info("info.auth_service.login_attempt", zap.String("email", email))
 
@@ -77,21 +81,46 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (*Token
 		return nil, fmt.Errorf("invalid credentials")
 	}
 
+	if user.PasswordHash == "" {
+		providers := make([]string, len(user.Providers))
+		for i, p := range user.Providers {
+			providers[i] = p.Provider
+		}
+		return nil, fmt.Errorf("this account uses %s login", strings.Join(providers, "/"))
+	}
+
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
 		log.Warn("warn.auth_service.invalid_password", zap.String("email", email))
 		return nil, fmt.Errorf("invalid credentials")
 	}
 
+	// Check if 2FA is enabled
+	if user.TwoFAEnabled {
+		log.Info("info.auth_service.2fa_required", zap.String("user_id", user.ID))
+
+		tempToken, err := randomHex(32)
+		if err != nil {
+			return nil, fmt.Errorf("generating temp token: %w", err)
+		}
+
+		if err := s.tokenStore.SaveTempToken(ctx, tempToken, user.ID); err != nil {
+			return nil, fmt.Errorf("saving temp token: %w", err)
+		}
+
+		return &LoginResult{
+			Requires2FA: true,
+			TempToken:   tempToken,
+		}, nil
+	}
+
+	// No 2FA — issue pair directly
 	pair, err := s.issuePair(ctx, user)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Info("info.auth_service.login_successful",
-		zap.String("user_id", user.ID),
-		zap.String("email", user.Email),
-	)
-	return pair, nil
+	log.Info("info.auth_service.login_successful", zap.String("user_id", user.ID))
+	return &LoginResult{Pair: pair}, nil
 }
 
 func (s *AuthService) Refresh(ctx context.Context, refreshTokenStr string) (*TokenPair, error) {
@@ -315,4 +344,146 @@ func randomHex(n int) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(b), nil
+}
+
+func (s *AuthService) VerifyOTP(ctx context.Context, tempToken, otpCode string) (*TokenPair, error) {
+	log := middleware.FromContext(ctx, s.logger)
+	log.Info("verifying otp")
+
+	// Get userID from temp token
+	userID, err := s.tokenStore.GetTempToken(ctx, tempToken)
+	if err != nil {
+		log.Warn("invalid temp token", zap.Error(err))
+		return nil, fmt.Errorf("invalid or expired session")
+	}
+
+	user, err := s.users.FindByID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("user not found")
+	}
+
+	// Validate OTP
+	valid := s.totp.ValidateOTP(user.TwoFASecret, otpCode)
+
+	// If OTP invalid, try backup code
+	if !valid && len(user.TwoFABackupCodes) > 0 {
+		var newCodesJSON string
+		valid, newCodesJSON, err = s.totp.ValidateBackupCode(user.TwoFABackupCodes, otpCode)
+		if err != nil {
+			log.Error("backup code validation error", zap.Error(err))
+		}
+		if valid {
+			// Update backup codes (remove used one)
+			_ = s.users.UpdateBackupCodes(ctx, userID, newCodesJSON)
+			log.Info("backup code used", zap.String("user_id", userID))
+		}
+	}
+
+	if !valid {
+		log.Warn("invalid otp", zap.String("user_id", userID))
+		return nil, fmt.Errorf("invalid OTP")
+	}
+
+	// Delete temp token
+	_ = s.tokenStore.DeleteTempToken(ctx, tempToken)
+
+	// Issue full token pair
+	pair, err := s.issuePair(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Info("otp verified, login successful", zap.String("user_id", userID))
+	return pair, nil
+}
+
+func (s *AuthService) Setup2FA(ctx context.Context, userID string) (*Setup2FAResult, error) {
+	log := middleware.FromContext(ctx, s.logger)
+	log.Info("setting up 2fa", zap.String("user_id", userID))
+
+	user, err := s.users.FindByID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("user not found")
+	}
+
+	if user.TwoFAEnabled {
+		return nil, fmt.Errorf("2FA is already enabled")
+	}
+
+	secret, qrURL, qrImage, err := s.totp.GenerateSecret(user.Email)
+	if err != nil {
+		return nil, fmt.Errorf("generating 2fa secret: %w", err)
+	}
+
+	// Store secret temporarily (not enabled yet)
+	if err := s.users.Update2FASecret(ctx, userID, secret); err != nil {
+		return nil, fmt.Errorf("storing 2fa secret: %w", err)
+	}
+
+	log.Info("2fa secret generated", zap.String("user_id", userID))
+	return &Setup2FAResult{
+		Secret:  secret,
+		QRURL:   qrURL,
+		QRImage: qrImage,
+	}, nil
+}
+
+func (s *AuthService) Enable2FA(ctx context.Context, userID, otpCode string) ([]string, error) {
+	log := middleware.FromContext(ctx, s.logger)
+	log.Info("enabling 2fa", zap.String("user_id", userID))
+
+	user, err := s.users.FindByID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("user not found")
+	}
+
+	if user.TwoFASecret == "" {
+		return nil, fmt.Errorf("2FA not set up — call /2fa/setup first")
+	}
+
+	// Verify OTP before enabling
+	if !s.totp.ValidateOTP(user.TwoFASecret, otpCode) {
+		log.Warn("invalid otp during 2fa enable", zap.String("user_id", userID))
+		return nil, fmt.Errorf("invalid OTP")
+	}
+
+	// Generate backup codes
+	backupCodes, hashedJSON, err := s.totp.GenerateBackupCodes()
+	if err != nil {
+		return nil, fmt.Errorf("generating backup codes: %w", err)
+	}
+
+	if err := s.users.Enable2FA(ctx, userID, hashedJSON); err != nil {
+		return nil, fmt.Errorf("enabling 2fa: %w", err)
+	}
+
+	log.Info("2fa enabled", zap.String("user_id", userID))
+	return backupCodes, nil
+}
+
+func (s *AuthService) Disable2FA(ctx context.Context, userID, otpCode string) error {
+	log := middleware.FromContext(ctx, s.logger)
+	log.Info("disabling 2fa", zap.String("user_id", userID))
+
+	user, err := s.users.FindByID(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("user not found")
+	}
+
+	if !user.TwoFAEnabled {
+		return fmt.Errorf("2FA is not enabled")
+	}
+
+	// Verify OTP before disabling
+	if !s.totp.ValidateOTP(user.TwoFASecret, otpCode) {
+		log.Warn("invalid otp during 2fa disable", zap.String("user_id", userID))
+		return fmt.Errorf("invalid OTP")
+	}
+
+	if err := s.users.Disable2FA(ctx, userID); err != nil {
+		return fmt.Errorf("disabling 2fa: %w", err)
+	}
+
+	log.Info("2fa disabled", zap.String("user_id", userID))
+	return nil
 }

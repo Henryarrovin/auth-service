@@ -19,7 +19,7 @@ func NewDB(cfg *config.Config, logger *zap.Logger) (*gorm.DB, error) {
 		return nil, fmt.Errorf("connecting to database: %w", err)
 	}
 
-	if err := db.AutoMigrate(&models.User{}, &models.Role{}, &models.UserRole{}); err != nil {
+	if err := db.AutoMigrate(&models.User{}, &models.Role{}, &models.UserRole{}, &models.UserProvider{}); err != nil {
 		return nil, fmt.Errorf("auto migrating: %w", err)
 	}
 

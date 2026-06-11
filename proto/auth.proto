@@ -80,6 +80,34 @@ service AuthService {
       get: "/api/v1/auth/oauth/{provider}/callback"
     };
   }
+
+  rpc VerifyOTP  (VerifyOTPRequest)  returns (VerifyOTPResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/verify-otp"
+      body: "*"
+    };
+  }
+
+  rpc Setup2FA   (Setup2FARequest)   returns (Setup2FAResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/2fa/setup"
+      body: "*"
+    };
+  }
+
+  rpc Enable2FA  (Enable2FARequest)  returns (Enable2FAResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/2fa/enable"
+      body: "*"
+    };
+  }
+  
+  rpc Disable2FA (Disable2FARequest) returns (Disable2FAResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/2fa/disable"
+      body: "*"
+    };
+  }
 }
 
 message Role {
@@ -110,6 +138,8 @@ message LoginResponse {
   string refresh_token = 2;
   int64  expires_in    = 3;
   string token_type    = 4;
+  bool   requires_2fa  = 5;
+  string temp_token    = 6; // to verify otp
 }
 
 message RefreshRequest {
@@ -203,4 +233,47 @@ message OAuthCallbackResponse {
   int64  expires_in    = 3;
   string token_type    = 4;
   bool   is_new_user   = 5;
+}
+
+message VerifyOTPRequest {
+  string temp_token = 1;
+  string otp        = 2;
+}
+
+message VerifyOTPResponse {
+  string access_token  = 1;
+  string refresh_token = 2;
+  int64  expires_in    = 3;
+  string token_type    = 4;
+}
+
+message Setup2FARequest {
+  string user_id = 1;
+}
+
+message Setup2FAResponse {
+  string secret   = 1;
+  string qr_url   = 2; // otpauth:// URL for QR code
+  string qr_image = 3; // base64 encoded QR image
+}
+
+message Enable2FARequest {
+  string user_id = 1;
+  string otp     = 2; // verify OTP before enabling
+}
+
+message Enable2FAResponse {
+  bool   success      = 1;
+  string message      = 2;
+  repeated string backup_codes = 3; // one-time use backup codes
+}
+
+message Disable2FARequest {
+  string user_id = 1;
+  string otp     = 2;
+}
+
+message Disable2FAResponse {
+  bool   success = 1;
+  string message = 2;
 }

@@ -18,3 +18,18 @@ type ValidateResult struct {
 	Email  string
 	Roles  []string
 }
+
+type LoginResult struct {
+	// Set when 2FA not required
+	Pair *TokenPair
+
+	// Set when 2FA required
+	Requires2FA bool
+	TempToken   string
+}
+
+type Setup2FAResult struct {
+	Secret  string
+	QRURL   string
+	QRImage string
+}

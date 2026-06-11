@@ -123,3 +123,38 @@ func (r *UserRepository) UpdateOAuthInfo(ctx context.Context, userID, provider, 
 			"avatar_url":  avatarURL,
 		}).Error
 }
+
+func (r *UserRepository) Update2FASecret(ctx context.Context, userID, secret string) error {
+	return r.db.WithContext(ctx).
+		Model(&models.User{}).
+		Where("id = ?", userID).
+		Update("two_fa_secret", secret).Error
+}
+
+func (r *UserRepository) Enable2FA(ctx context.Context, userID string, backupCodes string) error {
+	return r.db.WithContext(ctx).
+		Model(&models.User{}).
+		Where("id = ?", userID).
+		Updates(map[string]any{
+			"two_fa_enabled":      true,
+			"two_fa_backup_codes": backupCodes,
+		}).Error
+}
+
+func (r *UserRepository) Disable2FA(ctx context.Context, userID string) error {
+	return r.db.WithContext(ctx).
+		Model(&models.User{}).
+		Where("id = ?", userID).
+		Updates(map[string]any{
+			"two_fa_enabled":      false,
+			"two_fa_secret":       "",
+			"two_fa_backup_codes": "",
+		}).Error
+}
+
+func (r *UserRepository) UpdateBackupCodes(ctx context.Context, userID string, backupCodes string) error {
+	return r.db.WithContext(ctx).
+		Model(&models.User{}).
+		Where("id = ?", userID).
+		Update("two_fa_backup_codes", backupCodes).Error
+}
