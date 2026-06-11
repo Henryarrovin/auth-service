@@ -5,6 +5,7 @@ import (
 	"github.com/Henryarrovin/auth-service/services/email_service"
 	"github.com/Henryarrovin/auth-service/services/jwt_service"
 	"github.com/Henryarrovin/auth-service/services/oauth_service"
+	"github.com/Henryarrovin/auth-service/services/totp_service"
 
 	"github.com/google/wire"
 )
@@ -14,4 +15,5 @@ var ProviderSet = wire.NewSet(
 	auth_service.ProviderSet,
 	email_service.ProviderSet,
 	oauth_service.ProviderSet,
+	totp_service.ProviderSet,
 )
