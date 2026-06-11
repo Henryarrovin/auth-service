@@ -151,3 +151,10 @@ func (r *UserRepository) Disable2FA(ctx context.Context, userID string) error {
 			"two_fa_backup_codes": "",
 		}).Error
 }
+
+func (r *UserRepository) UpdateBackupCodes(ctx context.Context, userID string, backupCodes string) error {
+	return r.db.WithContext(ctx).
+		Model(&models.User{}).
+		Where("id = ?", userID).
+		Update("two_fa_backup_codes", backupCodes).Error
+}

@@ -58,16 +58,25 @@ func (h *AuthHandler) Login(ctx context.Context, req *authpb.LoginRequest) (*aut
 		return nil, status.Error(codes.InvalidArgument, "email and password are required")
 	}
 
-	pair, err := h.svc.Login(ctx, req.Email, req.Password)
+	result, err := h.svc.Login(ctx, req.Email, req.Password)
 	if err != nil {
-		log.Warn("warn.auth_service.login_failed", zap.String("email", req.Email), zap.Error(err))
-		return nil, status.Error(codes.Unauthenticated, "invalid credentials")
+		log.Warn("login failed", zap.String("email", req.Email), zap.Error(err))
+		return nil, status.Error(codes.Unauthenticated, err.Error())
 	}
 
+	// 2FA required
+	if result.Requires2FA {
+		return &authpb.LoginResponse{
+			Requires_2Fa: true,
+			TempToken:    result.TempToken,
+		}, nil
+	}
+
+	// No 2FA
 	return &authpb.LoginResponse{
-		AccessToken:  pair.AccessToken,
-		RefreshToken: pair.RefreshToken,
-		ExpiresIn:    pair.ExpiresIn,
+		AccessToken:  result.Pair.AccessToken,
+		RefreshToken: result.Pair.RefreshToken,
+		ExpiresIn:    result.Pair.ExpiresIn,
 		TokenType:    "Bearer",
 	}, nil
 }
@@ -247,5 +256,88 @@ func (h *AuthHandler) OAuthCallback(ctx context.Context, req *authpb.OAuthCallba
 		ExpiresIn:    result.ExpiresIn,
 		TokenType:    "Bearer",
 		IsNewUser:    result.IsNewUser,
+	}, nil
+}
+
+func (h *AuthHandler) VerifyOTP(ctx context.Context, req *authpb.VerifyOTPRequest) (*authpb.VerifyOTPResponse, error) {
+	log := middleware.FromContext(ctx, h.logger)
+
+	if req.TempToken == "" || req.Otp == "" {
+		log.Warn("warn.auth_service.verify_otp_missing_fields")
+		return nil, status.Error(codes.InvalidArgument, "temp_token and otp are required")
+	}
+
+	pair, err := h.svc.VerifyOTP(ctx, req.TempToken, req.Otp)
+	if err != nil {
+		log.Warn("otp verification failed", zap.Error(err))
+		return nil, status.Error(codes.Unauthenticated, err.Error())
+	}
+
+	return &authpb.VerifyOTPResponse{
+		AccessToken:  pair.AccessToken,
+		RefreshToken: pair.RefreshToken,
+		ExpiresIn:    pair.ExpiresIn,
+		TokenType:    "Bearer",
+	}, nil
+}
+
+func (h *AuthHandler) Setup2FA(ctx context.Context, req *authpb.Setup2FARequest) (*authpb.Setup2FAResponse, error) {
+	log := middleware.FromContext(ctx, h.logger)
+
+	if req.UserId == "" {
+		log.Warn("warn.auth_service.setup_2fa_missing_fields")
+		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+	}
+
+	result, err := h.svc.Setup2FA(ctx, req.UserId)
+	if err != nil {
+		log.Error("2fa setup failed", zap.Error(err))
+		return nil, status.Errorf(codes.Internal, "2fa setup failed: %v", err)
+	}
+
+	return &authpb.Setup2FAResponse{
+		Secret:  result.Secret,
+		QrUrl:   result.QRURL,
+		QrImage: result.QRImage,
+	}, nil
+}
+
+func (h *AuthHandler) Enable2FA(ctx context.Context, req *authpb.Enable2FARequest) (*authpb.Enable2FAResponse, error) {
+	log := middleware.FromContext(ctx, h.logger)
+
+	if req.UserId == "" || req.Otp == "" {
+		log.Warn("warn.auth_service.enable_2fa_missing_fields")
+		return nil, status.Error(codes.InvalidArgument, "user_id and otp are required")
+	}
+
+	backupCodes, err := h.svc.Enable2FA(ctx, req.UserId, req.Otp)
+	if err != nil {
+		log.Warn("2fa enable failed", zap.Error(err))
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &authpb.Enable2FAResponse{
+		Success:     true,
+		Message:     "2FA enabled successfully",
+		BackupCodes: backupCodes,
+	}, nil
+}
+
+func (h *AuthHandler) Disable2FA(ctx context.Context, req *authpb.Disable2FARequest) (*authpb.Disable2FAResponse, error) {
+	log := middleware.FromContext(ctx, h.logger)
+
+	if req.UserId == "" || req.Otp == "" {
+		log.Warn("warn.auth_service.disable_2fa_missing_fields")
+		return nil, status.Error(codes.InvalidArgument, "user_id and otp are required")
+	}
+
+	if err := h.svc.Disable2FA(ctx, req.UserId, req.Otp); err != nil {
+		log.Warn("2fa disable failed", zap.Error(err))
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &authpb.Disable2FAResponse{
+		Success: true,
+		Message: "2FA disabled successfully",
 	}, nil
 }
