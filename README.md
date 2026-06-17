@@ -1,6 +1,6 @@
 # auth-service
 
-A production-ready authentication microservice exposing a gRPC API on port `50051` and an HTTP API on port `8080`. It supports JWT-based auth, OAuth (Google & GitHub) and email verification.
+A production-ready authentication microservice exposing a gRPC API on port `50051` and an HTTP API on port `8080`. It supports JWT-based auth, OAuth (Google & GitHub), email verification and totp for 2FA.
 
 ---
 
