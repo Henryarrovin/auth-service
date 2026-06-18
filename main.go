@@ -94,8 +94,10 @@ func main() {
 	}
 
 	httpSrv := &http.Server{
-		Addr:    ":8080",
-		Handler: middleware.HTTPLogger(logger)(mux),
+		Addr: ":8080",
+		Handler: middleware.CORSHandler(
+			middleware.HTTPLogger(logger)(mux),
+		),
 	}
 
 	// ── Start gRPC ────────────────────────────────────────────────────
