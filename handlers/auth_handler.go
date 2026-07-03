@@ -89,15 +89,16 @@ func (h *AuthHandler) Refresh(ctx context.Context, req *authpb.RefreshRequest) (
 		return nil, status.Error(codes.InvalidArgument, "refresh_token is required")
 	}
 
-	pair, err := h.svc.Refresh(ctx, req.RefreshToken)
+	result, err := h.svc.Refresh(ctx, req.RefreshToken)
 	if err != nil {
 		log.Warn("warn.auth_service.refresh_failed", zap.Error(err))
 		return nil, status.Error(codes.Unauthenticated, "invalid or expired refresh token")
 	}
 
 	return &authpb.RefreshResponse{
-		AccessToken: pair.AccessToken,
-		ExpiresIn:   pair.ExpiresIn,
+		AccessToken:  result.Pair.AccessToken,
+		RefreshToken: result.Pair.RefreshToken,
+		ExpiresIn:    result.Pair.ExpiresIn,
 	}, nil
 }
 
