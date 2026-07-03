@@ -385,7 +385,8 @@ func (x *RefreshRequest) GetRefreshToken() string {
 type RefreshResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
-	ExpiresIn     int64                  `protobuf:"varint,2,opt,name=expires_in,json=expiresIn,proto3" json:"expires_in,omitempty"`
+	RefreshToken  string                 `protobuf:"bytes,2,opt,name=refresh_token,json=refreshToken,proto3" json:"refresh_token,omitempty"`
+	ExpiresIn     int64                  `protobuf:"varint,3,opt,name=expires_in,json=expiresIn,proto3" json:"expires_in,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -423,6 +424,13 @@ func (*RefreshResponse) Descriptor() ([]byte, []int) {
 func (x *RefreshResponse) GetAccessToken() string {
 	if x != nil {
 		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *RefreshResponse) GetRefreshToken() string {
+	if x != nil {
+		return x.RefreshToken
 	}
 	return ""
 }
@@ -1770,11 +1778,12 @@ const file_auth_proto_rawDesc = "" +
 	"\n" +
 	"temp_token\x18\x06 \x01(\tR\ttempToken\"5\n" +
 	"\x0eRefreshRequest\x12#\n" +
-	"\rrefresh_token\x18\x01 \x01(\tR\frefreshToken\"S\n" +
+	"\rrefresh_token\x18\x01 \x01(\tR\frefreshToken\"x\n" +
 	"\x0fRefreshResponse\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x1d\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12#\n" +
+	"\rrefresh_token\x18\x02 \x01(\tR\frefreshToken\x12\x1d\n" +
 	"\n" +
-	"expires_in\x18\x02 \x01(\x03R\texpiresIn\"2\n" +
+	"expires_in\x18\x03 \x01(\x03R\texpiresIn\"2\n" +
 	"\rLogoutRequest\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\"D\n" +
 	"\x0eLogoutResponse\x12\x18\n" +

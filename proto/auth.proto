@@ -148,7 +148,8 @@ message RefreshRequest {
 
 message RefreshResponse {
   string access_token = 1;
-  int64  expires_in   = 2;
+  string refresh_token = 2;
+  int64  expires_in   = 3;
 }
 
 message LogoutRequest {

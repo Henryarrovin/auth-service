@@ -123,7 +123,7 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (*Login
 	return &LoginResult{Pair: pair}, nil
 }
 
-func (s *AuthService) Refresh(ctx context.Context, refreshTokenStr string) (*TokenPair, error) {
+func (s *AuthService) Refresh(ctx context.Context, refreshTokenStr string) (*RefreshResult, error) {
 	log := middleware.FromContext(ctx, s.logger)
 	log.Info("info.auth_service.refresh_attempt")
 
@@ -151,13 +151,35 @@ func (s *AuthService) Refresh(ctx context.Context, refreshTokenStr string) (*Tok
 		return nil, fmt.Errorf("user not found: %w", err)
 	}
 
+	// require 2FA again before issuing new tokens
+	/*
+		if user.TwoFAEnabled {
+			tempToken, err := randomHex(32)
+			if err != nil {
+				return nil, fmt.Errorf("generating temp token: %w", err)
+			}
+
+			if err := s.tokenStore.SaveTempToken(ctx, tempToken, user.ID); err != nil {
+				return nil, fmt.Errorf("saving temp token: %w", err)
+			}
+
+			return &RefreshResult{
+				Requires2FA: true,
+				TempToken:   tempToken,
+			}, nil
+		}
+	*/
+
 	pair, err := s.issuePair(ctx, user)
 	if err != nil {
 		return nil, err
 	}
 
 	log.Info("info.auth_service.refresh_successful", zap.String("user_id", user.ID))
-	return pair, nil
+
+	return &RefreshResult{
+		Pair: pair,
+	}, nil
 }
 
 func (s *AuthService) Logout(ctx context.Context, accessTokenStr string) error {
