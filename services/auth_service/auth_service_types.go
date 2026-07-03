@@ -28,6 +28,15 @@ type LoginResult struct {
 	TempToken   string
 }
 
+type RefreshResult struct {
+	// Set when 2FA not required
+	Pair *TokenPair
+
+	// Set when 2FA required
+	Requires2FA bool
+	TempToken   string
+}
+
 type Setup2FAResult struct {
 	Secret  string
 	QRURL   string
