@@ -42,3 +42,14 @@ type Setup2FAResult struct {
 	QRURL   string
 	QRImage string
 }
+
+// SyncKeyMaterial is what a device needs to re-derive the key-encryption key
+// locally and unwrap the data key. Configured is false until any device has
+// run SetupSyncKey for this account.
+type SyncKeyMaterial struct {
+	Configured      bool
+	Salt            string
+	KDFParams       string
+	WrappedDEK      string
+	WrappedDEKNonce string
+}
