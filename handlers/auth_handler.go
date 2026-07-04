@@ -342,3 +342,40 @@ func (h *AuthHandler) Disable2FA(ctx context.Context, req *authpb.Disable2FARequ
 		Message: "2FA disabled successfully",
 	}, nil
 }
+
+func (h *AuthHandler) SetupSyncKey(ctx context.Context, req *authpb.SetupSyncKeyRequest) (*authpb.SetupSyncKeyResponse, error) {
+	log := middleware.FromContext(ctx, h.logger)
+
+	if req.AccessToken == "" || req.Salt == "" || req.WrappedDek == "" || req.WrappedDekNonce == "" {
+		return nil, status.Error(codes.InvalidArgument, "access_token, salt, wrapped_dek and wrapped_dek_nonce are required")
+	}
+
+	if err := h.svc.SetupSyncKey(ctx, req.AccessToken, req.Salt, req.KdfParams, req.WrappedDek, req.WrappedDekNonce); err != nil {
+		log.Warn("warn.auth_service.setup_sync_key_failed", zap.Error(err))
+		return nil, status.Errorf(codes.Unauthenticated, "%v", err)
+	}
+
+	return &authpb.SetupSyncKeyResponse{Success: true, Message: "sync key configured"}, nil
+}
+
+func (h *AuthHandler) GetSyncKey(ctx context.Context, req *authpb.GetSyncKeyRequest) (*authpb.GetSyncKeyResponse, error) {
+	log := middleware.FromContext(ctx, h.logger)
+
+	if req.AccessToken == "" {
+		return nil, status.Error(codes.InvalidArgument, "access_token is required")
+	}
+
+	material, err := h.svc.GetSyncKey(ctx, req.AccessToken)
+	if err != nil {
+		log.Warn("warn.auth_service.get_sync_key_failed", zap.Error(err))
+		return nil, status.Errorf(codes.Unauthenticated, "%v", err)
+	}
+
+	return &authpb.GetSyncKeyResponse{
+		Configured:      material.Configured,
+		Salt:            material.Salt,
+		KdfParams:       material.KDFParams,
+		WrappedDek:      material.WrappedDEK,
+		WrappedDekNonce: material.WrappedDEKNonce,
+	}, nil
+}
