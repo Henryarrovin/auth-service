@@ -522,3 +522,24 @@ func (s *AuthService) SetupSyncKey(ctx context.Context, accessToken, salt, kdfPa
 	}
 	return s.users.SetSyncKeyMaterial(ctx, claims.UserID, salt, kdfParams, wrappedDEK, wrappedNonce)
 }
+
+func (s *AuthService) GetSyncKey(ctx context.Context, accessToken string) (*SyncKeyMaterial, error) {
+	claims, err := s.jwt.ValidateAccessToken(accessToken)
+	if err != nil {
+		return nil, fmt.Errorf("invalid access token: %w", err)
+	}
+	user, err := s.users.FindByID(ctx, claims.UserID)
+	if err != nil {
+		return nil, err
+	}
+	if user.WrappedDEK == "" {
+		return &SyncKeyMaterial{Configured: false}, nil
+	}
+	return &SyncKeyMaterial{
+		Configured:      true,
+		Salt:            user.SyncKeySalt,
+		KDFParams:       user.SyncKDFParams,
+		WrappedDEK:      user.WrappedDEK,
+		WrappedDEKNonce: user.WrappedDEKNonce,
+	}, nil
+}
