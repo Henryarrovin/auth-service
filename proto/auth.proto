@@ -108,6 +108,25 @@ service AuthService {
       body: "*"
     };
   }
+
+  // SetupSyncKey stores the client-wrapped clipboard data key (E2EE).
+  // The server never receives the passphrase, the derived key-encryption
+  // key, or the plaintext data key — only an opaque wrapped blob.
+  rpc SetupSyncKey (SetupSyncKeyRequest) returns (SetupSyncKeyResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/sync-key/setup"
+      body: "*"
+    };
+  }
+
+  // GetSyncKey returns the wrapped data key + non-secret salt/KDF params so
+  // a device can re-derive the key-encryption key locally and unwrap it.
+  rpc GetSyncKey (GetSyncKeyRequest) returns (GetSyncKeyResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/sync-key"
+      body: "*"
+    };
+  }
 }
 
 message Role {
@@ -277,4 +296,29 @@ message Disable2FARequest {
 message Disable2FAResponse {
   bool   success = 1;
   string message = 2;
+}
+
+message SetupSyncKeyRequest {
+  string access_token      = 1; // identifies the caller, same pattern as LogoutRequest
+  string salt              = 2; // base64, random, generated client-side, not secret
+  string kdf_params        = 3; // e.g. "argon2id$m=65536,t=3,p=4"
+  string wrapped_dek       = 4; // base64 AES-GCM ciphertext of the data key
+  string wrapped_dek_nonce = 5; // base64 nonce used to wrap the data key
+}
+
+message SetupSyncKeyResponse {
+  bool   success = 1;
+  string message = 2;
+}
+
+message GetSyncKeyRequest {
+  string access_token = 1;
+}
+
+message GetSyncKeyResponse {
+  bool   configured        = 1; // false until the user has run setup on any device
+  string salt              = 2;
+  string kdf_params        = 3;
+  string wrapped_dek       = 4;
+  string wrapped_dek_nonce = 5;
 }

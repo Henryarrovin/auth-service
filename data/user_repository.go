@@ -158,3 +158,19 @@ func (r *UserRepository) UpdateBackupCodes(ctx context.Context, userID string, b
 		Where("id = ?", userID).
 		Update("two_fa_backup_codes", backupCodes).Error
 }
+
+// stores the wrapped (encrypted) data key for a user
+// The server never sees the passphrase, the derived KEK, or the plaintext DEK —
+// only this opaque blob plus the (non-secret) salt/KDF params needed to
+// re-derive the KEK client-side
+func (r *UserRepository) SetSyncKeyMaterial(ctx context.Context, userID, salt, kdfParams, wrappedDEK, wrappedNonce string) error {
+	return r.db.WithContext(ctx).
+		Model(&models.User{}).
+		Where("id = ?", userID).
+		Updates(map[string]any{
+			"sync_key_salt":     salt,
+			"sync_kdf_params":   kdfParams,
+			"wrapped_dek":       wrappedDEK,
+			"wrapped_dek_nonce": wrappedNonce,
+		}).Error
+}

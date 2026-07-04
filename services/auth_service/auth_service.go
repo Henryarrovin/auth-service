@@ -509,3 +509,37 @@ func (s *AuthService) Disable2FA(ctx context.Context, userID, otpCode string) er
 	log.Info("2fa disabled", zap.String("user_id", userID))
 	return nil
 }
+
+// SetupSyncKey stores a client-wrapped data key for the caller (identified by their access token)
+// The server never sees the passphrase, the derived key-encryption key, or the plaintext data key
+func (s *AuthService) SetupSyncKey(ctx context.Context, accessToken, salt, kdfParams, wrappedDEK, wrappedNonce string) error {
+	claims, err := s.jwt.ValidateAccessToken(accessToken)
+	if err != nil {
+		return fmt.Errorf("invalid access token: %w", err)
+	}
+	if salt == "" || wrappedDEK == "" || wrappedNonce == "" {
+		return fmt.Errorf("salt, wrapped_dek and wrapped_dek_nonce are required")
+	}
+	return s.users.SetSyncKeyMaterial(ctx, claims.UserID, salt, kdfParams, wrappedDEK, wrappedNonce)
+}
+
+func (s *AuthService) GetSyncKey(ctx context.Context, accessToken string) (*SyncKeyMaterial, error) {
+	claims, err := s.jwt.ValidateAccessToken(accessToken)
+	if err != nil {
+		return nil, fmt.Errorf("invalid access token: %w", err)
+	}
+	user, err := s.users.FindByID(ctx, claims.UserID)
+	if err != nil {
+		return nil, err
+	}
+	if user.WrappedDEK == "" {
+		return &SyncKeyMaterial{Configured: false}, nil
+	}
+	return &SyncKeyMaterial{
+		Configured:      true,
+		Salt:            user.SyncKeySalt,
+		KDFParams:       user.SyncKDFParams,
+		WrappedDEK:      user.WrappedDEK,
+		WrappedDEKNonce: user.WrappedDEKNonce,
+	}, nil
+}

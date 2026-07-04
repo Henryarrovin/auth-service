@@ -1746,6 +1746,254 @@ func (x *Disable2FAResponse) GetMessage() string {
 	return ""
 }
 
+type SetupSyncKeyRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken     string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`               // identifies the caller, same pattern as LogoutRequest
+	Salt            string                 `protobuf:"bytes,2,opt,name=salt,proto3" json:"salt,omitempty"`                                                // base64, random, generated client-side, not secret
+	KdfParams       string                 `protobuf:"bytes,3,opt,name=kdf_params,json=kdfParams,proto3" json:"kdf_params,omitempty"`                     // e.g. "argon2id$m=65536,t=3,p=4"
+	WrappedDek      string                 `protobuf:"bytes,4,opt,name=wrapped_dek,json=wrappedDek,proto3" json:"wrapped_dek,omitempty"`                  // base64 AES-GCM ciphertext of the data key
+	WrappedDekNonce string                 `protobuf:"bytes,5,opt,name=wrapped_dek_nonce,json=wrappedDekNonce,proto3" json:"wrapped_dek_nonce,omitempty"` // base64 nonce used to wrap the data key
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *SetupSyncKeyRequest) Reset() {
+	*x = SetupSyncKeyRequest{}
+	mi := &file_auth_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetupSyncKeyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetupSyncKeyRequest) ProtoMessage() {}
+
+func (x *SetupSyncKeyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetupSyncKeyRequest.ProtoReflect.Descriptor instead.
+func (*SetupSyncKeyRequest) Descriptor() ([]byte, []int) {
+	return file_auth_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *SetupSyncKeyRequest) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *SetupSyncKeyRequest) GetSalt() string {
+	if x != nil {
+		return x.Salt
+	}
+	return ""
+}
+
+func (x *SetupSyncKeyRequest) GetKdfParams() string {
+	if x != nil {
+		return x.KdfParams
+	}
+	return ""
+}
+
+func (x *SetupSyncKeyRequest) GetWrappedDek() string {
+	if x != nil {
+		return x.WrappedDek
+	}
+	return ""
+}
+
+func (x *SetupSyncKeyRequest) GetWrappedDekNonce() string {
+	if x != nil {
+		return x.WrappedDekNonce
+	}
+	return ""
+}
+
+type SetupSyncKeyResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetupSyncKeyResponse) Reset() {
+	*x = SetupSyncKeyResponse{}
+	mi := &file_auth_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetupSyncKeyResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetupSyncKeyResponse) ProtoMessage() {}
+
+func (x *SetupSyncKeyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetupSyncKeyResponse.ProtoReflect.Descriptor instead.
+func (*SetupSyncKeyResponse) Descriptor() ([]byte, []int) {
+	return file_auth_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *SetupSyncKeyResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *SetupSyncKeyResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+type GetSyncKeyRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSyncKeyRequest) Reset() {
+	*x = GetSyncKeyRequest{}
+	mi := &file_auth_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSyncKeyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSyncKeyRequest) ProtoMessage() {}
+
+func (x *GetSyncKeyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSyncKeyRequest.ProtoReflect.Descriptor instead.
+func (*GetSyncKeyRequest) Descriptor() ([]byte, []int) {
+	return file_auth_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *GetSyncKeyRequest) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+type GetSyncKeyResponse struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Configured      bool                   `protobuf:"varint,1,opt,name=configured,proto3" json:"configured,omitempty"` // false until the user has run setup on any device
+	Salt            string                 `protobuf:"bytes,2,opt,name=salt,proto3" json:"salt,omitempty"`
+	KdfParams       string                 `protobuf:"bytes,3,opt,name=kdf_params,json=kdfParams,proto3" json:"kdf_params,omitempty"`
+	WrappedDek      string                 `protobuf:"bytes,4,opt,name=wrapped_dek,json=wrappedDek,proto3" json:"wrapped_dek,omitempty"`
+	WrappedDekNonce string                 `protobuf:"bytes,5,opt,name=wrapped_dek_nonce,json=wrappedDekNonce,proto3" json:"wrapped_dek_nonce,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *GetSyncKeyResponse) Reset() {
+	*x = GetSyncKeyResponse{}
+	mi := &file_auth_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSyncKeyResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSyncKeyResponse) ProtoMessage() {}
+
+func (x *GetSyncKeyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSyncKeyResponse.ProtoReflect.Descriptor instead.
+func (*GetSyncKeyResponse) Descriptor() ([]byte, []int) {
+	return file_auth_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *GetSyncKeyResponse) GetConfigured() bool {
+	if x != nil {
+		return x.Configured
+	}
+	return false
+}
+
+func (x *GetSyncKeyResponse) GetSalt() string {
+	if x != nil {
+		return x.Salt
+	}
+	return ""
+}
+
+func (x *GetSyncKeyResponse) GetKdfParams() string {
+	if x != nil {
+		return x.KdfParams
+	}
+	return ""
+}
+
+func (x *GetSyncKeyResponse) GetWrappedDek() string {
+	if x != nil {
+		return x.WrappedDek
+	}
+	return ""
+}
+
+func (x *GetSyncKeyResponse) GetWrappedDekNonce() string {
+	if x != nil {
+		return x.WrappedDekNonce
+	}
+	return ""
+}
+
 var File_auth_proto protoreflect.FileDescriptor
 
 const file_auth_proto_rawDesc = "" +
@@ -1867,7 +2115,30 @@ const file_auth_proto_rawDesc = "" +
 	"\x03otp\x18\x02 \x01(\tR\x03otp\"H\n" +
 	"\x12Disable2FAResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage2\xd5\f\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"\xb8\x01\n" +
+	"\x13SetupSyncKeyRequest\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x12\n" +
+	"\x04salt\x18\x02 \x01(\tR\x04salt\x12\x1d\n" +
+	"\n" +
+	"kdf_params\x18\x03 \x01(\tR\tkdfParams\x12\x1f\n" +
+	"\vwrapped_dek\x18\x04 \x01(\tR\n" +
+	"wrappedDek\x12*\n" +
+	"\x11wrapped_dek_nonce\x18\x05 \x01(\tR\x0fwrappedDekNonce\"J\n" +
+	"\x14SetupSyncKeyResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"6\n" +
+	"\x11GetSyncKeyRequest\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\"\xb4\x01\n" +
+	"\x12GetSyncKeyResponse\x12\x1e\n" +
+	"\n" +
+	"configured\x18\x01 \x01(\bR\n" +
+	"configured\x12\x12\n" +
+	"\x04salt\x18\x02 \x01(\tR\x04salt\x12\x1d\n" +
+	"\n" +
+	"kdf_params\x18\x03 \x01(\tR\tkdfParams\x12\x1f\n" +
+	"\vwrapped_dek\x18\x04 \x01(\tR\n" +
+	"wrappedDek\x12*\n" +
+	"\x11wrapped_dek_nonce\x18\x05 \x01(\tR\x0fwrappedDekNonce2\xb3\x0e\n" +
 	"\vAuthService\x12a\n" +
 	"\bRegister\x12\x18.auth.v1.RegisterRequest\x1a\x19.auth.v1.RegisterResponse\" \x82\xd3\xe4\x93\x02\x1a:\x01*\"\x15/api/v1/auth/register\x12U\n" +
 	"\x05Login\x12\x15.auth.v1.LoginRequest\x1a\x16.auth.v1.LoginResponse\"\x1d\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/api/v1/auth/login\x12]\n" +
@@ -1886,7 +2157,10 @@ const file_auth_proto_rawDesc = "" +
 	"\bSetup2FA\x12\x18.auth.v1.Setup2FARequest\x1a\x19.auth.v1.Setup2FAResponse\"!\x82\xd3\xe4\x93\x02\x1b:\x01*\"\x16/api/v1/auth/2fa/setup\x12f\n" +
 	"\tEnable2FA\x12\x19.auth.v1.Enable2FARequest\x1a\x1a.auth.v1.Enable2FAResponse\"\"\x82\xd3\xe4\x93\x02\x1c:\x01*\"\x17/api/v1/auth/2fa/enable\x12j\n" +
 	"\n" +
-	"Disable2FA\x12\x1a.auth.v1.Disable2FARequest\x1a\x1b.auth.v1.Disable2FAResponse\"#\x82\xd3\xe4\x93\x02\x1d:\x01*\"\x18/api/v1/auth/2fa/disableB\x03Z\x01/b\x06proto3"
+	"Disable2FA\x12\x1a.auth.v1.Disable2FARequest\x1a\x1b.auth.v1.Disable2FAResponse\"#\x82\xd3\xe4\x93\x02\x1d:\x01*\"\x18/api/v1/auth/2fa/disable\x12s\n" +
+	"\fSetupSyncKey\x12\x1c.auth.v1.SetupSyncKeyRequest\x1a\x1d.auth.v1.SetupSyncKeyResponse\"&\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/api/v1/auth/sync-key/setup\x12g\n" +
+	"\n" +
+	"GetSyncKey\x12\x1a.auth.v1.GetSyncKeyRequest\x1a\x1b.auth.v1.GetSyncKeyResponse\" \x82\xd3\xe4\x93\x02\x1a:\x01*\"\x15/api/v1/auth/sync-keyB\x03Z\x01/b\x06proto3"
 
 var (
 	file_auth_proto_rawDescOnce sync.Once
@@ -1900,7 +2174,7 @@ func file_auth_proto_rawDescGZIP() []byte {
 	return file_auth_proto_rawDescData
 }
 
-var file_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
+var file_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 35)
 var file_auth_proto_goTypes = []any{
 	(*Role)(nil),                   // 0: auth.v1.Role
 	(*RegisterRequest)(nil),        // 1: auth.v1.RegisterRequest
@@ -1933,6 +2207,10 @@ var file_auth_proto_goTypes = []any{
 	(*Enable2FAResponse)(nil),      // 28: auth.v1.Enable2FAResponse
 	(*Disable2FARequest)(nil),      // 29: auth.v1.Disable2FARequest
 	(*Disable2FAResponse)(nil),     // 30: auth.v1.Disable2FAResponse
+	(*SetupSyncKeyRequest)(nil),    // 31: auth.v1.SetupSyncKeyRequest
+	(*SetupSyncKeyResponse)(nil),   // 32: auth.v1.SetupSyncKeyResponse
+	(*GetSyncKeyRequest)(nil),      // 33: auth.v1.GetSyncKeyRequest
+	(*GetSyncKeyResponse)(nil),     // 34: auth.v1.GetSyncKeyResponse
 }
 var file_auth_proto_depIdxs = []int32{
 	0,  // 0: auth.v1.GetUserRolesResponse.roles:type_name -> auth.v1.Role
@@ -1951,23 +2229,27 @@ var file_auth_proto_depIdxs = []int32{
 	25, // 13: auth.v1.AuthService.Setup2FA:input_type -> auth.v1.Setup2FARequest
 	27, // 14: auth.v1.AuthService.Enable2FA:input_type -> auth.v1.Enable2FARequest
 	29, // 15: auth.v1.AuthService.Disable2FA:input_type -> auth.v1.Disable2FARequest
-	2,  // 16: auth.v1.AuthService.Register:output_type -> auth.v1.RegisterResponse
-	4,  // 17: auth.v1.AuthService.Login:output_type -> auth.v1.LoginResponse
-	6,  // 18: auth.v1.AuthService.Refresh:output_type -> auth.v1.RefreshResponse
-	8,  // 19: auth.v1.AuthService.Logout:output_type -> auth.v1.LogoutResponse
-	10, // 20: auth.v1.AuthService.ValidateToken:output_type -> auth.v1.ValidateTokenResponse
-	12, // 21: auth.v1.AuthService.AssignRole:output_type -> auth.v1.AssignRoleResponse
-	14, // 22: auth.v1.AuthService.GetUserRoles:output_type -> auth.v1.GetUserRolesResponse
-	16, // 23: auth.v1.AuthService.ForgotPassword:output_type -> auth.v1.ForgotPasswordResponse
-	18, // 24: auth.v1.AuthService.ResetPassword:output_type -> auth.v1.ResetPasswordResponse
-	20, // 25: auth.v1.AuthService.OAuthLogin:output_type -> auth.v1.OAuthLoginResponse
-	22, // 26: auth.v1.AuthService.OAuthCallback:output_type -> auth.v1.OAuthCallbackResponse
-	24, // 27: auth.v1.AuthService.VerifyOTP:output_type -> auth.v1.VerifyOTPResponse
-	26, // 28: auth.v1.AuthService.Setup2FA:output_type -> auth.v1.Setup2FAResponse
-	28, // 29: auth.v1.AuthService.Enable2FA:output_type -> auth.v1.Enable2FAResponse
-	30, // 30: auth.v1.AuthService.Disable2FA:output_type -> auth.v1.Disable2FAResponse
-	16, // [16:31] is the sub-list for method output_type
-	1,  // [1:16] is the sub-list for method input_type
+	31, // 16: auth.v1.AuthService.SetupSyncKey:input_type -> auth.v1.SetupSyncKeyRequest
+	33, // 17: auth.v1.AuthService.GetSyncKey:input_type -> auth.v1.GetSyncKeyRequest
+	2,  // 18: auth.v1.AuthService.Register:output_type -> auth.v1.RegisterResponse
+	4,  // 19: auth.v1.AuthService.Login:output_type -> auth.v1.LoginResponse
+	6,  // 20: auth.v1.AuthService.Refresh:output_type -> auth.v1.RefreshResponse
+	8,  // 21: auth.v1.AuthService.Logout:output_type -> auth.v1.LogoutResponse
+	10, // 22: auth.v1.AuthService.ValidateToken:output_type -> auth.v1.ValidateTokenResponse
+	12, // 23: auth.v1.AuthService.AssignRole:output_type -> auth.v1.AssignRoleResponse
+	14, // 24: auth.v1.AuthService.GetUserRoles:output_type -> auth.v1.GetUserRolesResponse
+	16, // 25: auth.v1.AuthService.ForgotPassword:output_type -> auth.v1.ForgotPasswordResponse
+	18, // 26: auth.v1.AuthService.ResetPassword:output_type -> auth.v1.ResetPasswordResponse
+	20, // 27: auth.v1.AuthService.OAuthLogin:output_type -> auth.v1.OAuthLoginResponse
+	22, // 28: auth.v1.AuthService.OAuthCallback:output_type -> auth.v1.OAuthCallbackResponse
+	24, // 29: auth.v1.AuthService.VerifyOTP:output_type -> auth.v1.VerifyOTPResponse
+	26, // 30: auth.v1.AuthService.Setup2FA:output_type -> auth.v1.Setup2FAResponse
+	28, // 31: auth.v1.AuthService.Enable2FA:output_type -> auth.v1.Enable2FAResponse
+	30, // 32: auth.v1.AuthService.Disable2FA:output_type -> auth.v1.Disable2FAResponse
+	32, // 33: auth.v1.AuthService.SetupSyncKey:output_type -> auth.v1.SetupSyncKeyResponse
+	34, // 34: auth.v1.AuthService.GetSyncKey:output_type -> auth.v1.GetSyncKeyResponse
+	18, // [18:35] is the sub-list for method output_type
+	1,  // [1:18] is the sub-list for method input_type
 	1,  // [1:1] is the sub-list for extension type_name
 	1,  // [1:1] is the sub-list for extension extendee
 	0,  // [0:1] is the sub-list for field type_name
@@ -1984,7 +2266,7 @@ func file_auth_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_auth_proto_rawDesc), len(file_auth_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   31,
+			NumMessages:   35,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

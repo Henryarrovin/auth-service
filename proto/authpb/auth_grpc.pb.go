@@ -34,6 +34,8 @@ const (
 	AuthService_Setup2FA_FullMethodName       = "/auth.v1.AuthService/Setup2FA"
 	AuthService_Enable2FA_FullMethodName      = "/auth.v1.AuthService/Enable2FA"
 	AuthService_Disable2FA_FullMethodName     = "/auth.v1.AuthService/Disable2FA"
+	AuthService_SetupSyncKey_FullMethodName   = "/auth.v1.AuthService/SetupSyncKey"
+	AuthService_GetSyncKey_FullMethodName     = "/auth.v1.AuthService/GetSyncKey"
 )
 
 // AuthServiceClient is the client API for AuthService service.
@@ -55,6 +57,13 @@ type AuthServiceClient interface {
 	Setup2FA(ctx context.Context, in *Setup2FARequest, opts ...grpc.CallOption) (*Setup2FAResponse, error)
 	Enable2FA(ctx context.Context, in *Enable2FARequest, opts ...grpc.CallOption) (*Enable2FAResponse, error)
 	Disable2FA(ctx context.Context, in *Disable2FARequest, opts ...grpc.CallOption) (*Disable2FAResponse, error)
+	// SetupSyncKey stores the client-wrapped clipboard data key (E2EE).
+	// The server never receives the passphrase, the derived key-encryption
+	// key, or the plaintext data key — only an opaque wrapped blob.
+	SetupSyncKey(ctx context.Context, in *SetupSyncKeyRequest, opts ...grpc.CallOption) (*SetupSyncKeyResponse, error)
+	// GetSyncKey returns the wrapped data key + non-secret salt/KDF params so
+	// a device can re-derive the key-encryption key locally and unwrap it.
+	GetSyncKey(ctx context.Context, in *GetSyncKeyRequest, opts ...grpc.CallOption) (*GetSyncKeyResponse, error)
 }
 
 type authServiceClient struct {
@@ -215,6 +224,26 @@ func (c *authServiceClient) Disable2FA(ctx context.Context, in *Disable2FAReques
 	return out, nil
 }
 
+func (c *authServiceClient) SetupSyncKey(ctx context.Context, in *SetupSyncKeyRequest, opts ...grpc.CallOption) (*SetupSyncKeyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetupSyncKeyResponse)
+	err := c.cc.Invoke(ctx, AuthService_SetupSyncKey_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) GetSyncKey(ctx context.Context, in *GetSyncKeyRequest, opts ...grpc.CallOption) (*GetSyncKeyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetSyncKeyResponse)
+	err := c.cc.Invoke(ctx, AuthService_GetSyncKey_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthServiceServer is the server API for AuthService service.
 // All implementations must embed UnimplementedAuthServiceServer
 // for forward compatibility.
@@ -234,6 +263,13 @@ type AuthServiceServer interface {
 	Setup2FA(context.Context, *Setup2FARequest) (*Setup2FAResponse, error)
 	Enable2FA(context.Context, *Enable2FARequest) (*Enable2FAResponse, error)
 	Disable2FA(context.Context, *Disable2FARequest) (*Disable2FAResponse, error)
+	// SetupSyncKey stores the client-wrapped clipboard data key (E2EE).
+	// The server never receives the passphrase, the derived key-encryption
+	// key, or the plaintext data key — only an opaque wrapped blob.
+	SetupSyncKey(context.Context, *SetupSyncKeyRequest) (*SetupSyncKeyResponse, error)
+	// GetSyncKey returns the wrapped data key + non-secret salt/KDF params so
+	// a device can re-derive the key-encryption key locally and unwrap it.
+	GetSyncKey(context.Context, *GetSyncKeyRequest) (*GetSyncKeyResponse, error)
 	mustEmbedUnimplementedAuthServiceServer()
 }
 
@@ -288,6 +324,12 @@ func (UnimplementedAuthServiceServer) Enable2FA(context.Context, *Enable2FAReque
 }
 func (UnimplementedAuthServiceServer) Disable2FA(context.Context, *Disable2FARequest) (*Disable2FAResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Disable2FA not implemented")
+}
+func (UnimplementedAuthServiceServer) SetupSyncKey(context.Context, *SetupSyncKeyRequest) (*SetupSyncKeyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetupSyncKey not implemented")
+}
+func (UnimplementedAuthServiceServer) GetSyncKey(context.Context, *GetSyncKeyRequest) (*GetSyncKeyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetSyncKey not implemented")
 }
 func (UnimplementedAuthServiceServer) mustEmbedUnimplementedAuthServiceServer() {}
 func (UnimplementedAuthServiceServer) testEmbeddedByValue()                     {}
@@ -580,6 +622,42 @@ func _AuthService_Disable2FA_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_SetupSyncKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetupSyncKeyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).SetupSyncKey(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_SetupSyncKey_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).SetupSyncKey(ctx, req.(*SetupSyncKeyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_GetSyncKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSyncKeyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).GetSyncKey(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_GetSyncKey_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).GetSyncKey(ctx, req.(*GetSyncKeyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AuthService_ServiceDesc is the grpc.ServiceDesc for AuthService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -646,6 +724,14 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Disable2FA",
 			Handler:    _AuthService_Disable2FA_Handler,
+		},
+		{
+			MethodName: "SetupSyncKey",
+			Handler:    _AuthService_SetupSyncKey_Handler,
+		},
+		{
+			MethodName: "GetSyncKey",
+			Handler:    _AuthService_GetSyncKey_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
