@@ -34,10 +34,15 @@ type User struct {
 	TwoFASecret      string // TOTP secret
 	TwoFAEnabled     bool   `gorm:"default:false"`
 	TwoFABackupCodes string // JSON array of hashed backup codes
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-	Roles            []Role         `gorm:"many2many:user_roles;"`
-	Providers        []UserProvider `gorm:"foreignKey:UserID"`
+	SyncKeySalt      string // base64, random per user, not secret
+	SyncKDFParams    string
+	// Empty WrappedDEK means the user hasn't set up sync encryption on any device yet
+	WrappedDEK      string // base64 AES-GCM ciphertext of the DEK
+	WrappedDEKNonce string // base64 nonce used to wrap the DEK
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+	Roles           []Role         `gorm:"many2many:user_roles;"`
+	Providers       []UserProvider `gorm:"foreignKey:UserID"`
 }
 
 // UserRole is the join table
