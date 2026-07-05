@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/Henryarrovin/auth-service/config"
+	"github.com/Henryarrovin/auth-service/handlers"
 	kafka "github.com/Henryarrovin/auth-service/kafka_logger_pipeline"
 	"github.com/Henryarrovin/auth-service/middleware"
 	"github.com/Henryarrovin/auth-service/wire"
@@ -93,10 +95,15 @@ func main() {
 		logger.Fatal("gateway registration failed", zap.Error(err))
 	}
 
+	topMux := http.NewServeMux()
+	topMux.HandleFunc("/api/v1/auth/oauth/google/callback", oauthProviderRedirect(authHandler, "google"))
+	topMux.HandleFunc("/api/v1/auth/oauth/github/callback", oauthProviderRedirect(authHandler, "github"))
+	topMux.Handle("/", mux)
+
 	httpSrv := &http.Server{
 		Addr: ":8080",
 		Handler: middleware.CORSHandler(
-			middleware.HTTPLogger(logger)(mux),
+			middleware.HTTPLogger(logger)(topMux),
 		),
 	}
 
@@ -182,4 +189,29 @@ func buildLogger(appCfg *config.Config, baseLogger *zap.Logger) (*zap.Logger, fu
 	}()
 
 	return logger, consumerCancel
+}
+
+func oauthProviderRedirect(authHandler *handlers.AuthHandler, provider string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		code := r.URL.Query().Get("code")
+		state := r.URL.Query().Get("state")
+		if code == "" || state == "" {
+			http.Error(w, "missing code or state", http.StatusBadRequest)
+			return
+		}
+
+		appRedirectURI, err := authHandler.OAuth().PeekAppRedirect(r.Context(), state)
+		if err != nil || appRedirectURI == "" {
+			fmt.Fprintf(w, "<html><body>Sign-in complete. You can close this window.</body></html>")
+			return
+		}
+
+		target := fmt.Sprintf("%s?code=%s&state=%s&provider=%s",
+			appRedirectURI,
+			url.QueryEscape(code),
+			url.QueryEscape(state),
+			url.QueryEscape(provider),
+		)
+		http.Redirect(w, r, target, http.StatusFound)
+	}
 }

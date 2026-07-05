@@ -25,6 +25,12 @@ func NewAuthHandler(svc *auth_service.AuthService, oauth *oauth_service.OAuthSer
 	return &AuthHandler{svc: svc, oauth: oauth, logger: logger}
 }
 
+// OAuth exposes the OAuth service so main.go can wire the raw (non-gRPC-gateway)
+// redirect endpoint that the provider itself calls back to
+func (h *AuthHandler) OAuth() *oauth_service.OAuthService {
+	return h.oauth
+}
+
 func (h *AuthHandler) Register(ctx context.Context, req *authpb.RegisterRequest) (*authpb.RegisterResponse, error) {
 	log := middleware.FromContext(ctx, h.logger)
 
@@ -229,7 +235,7 @@ func (h *AuthHandler) OAuthLogin(ctx context.Context, req *authpb.OAuthLoginRequ
 		return nil, status.Error(codes.InvalidArgument, "provider is required")
 	}
 
-	url, err := h.oauth.GetRedirectURL(ctx, req.Provider)
+	url, err := h.oauth.GetRedirectURL(ctx, req.Provider, req.AppRedirectUri)
 	if err != nil {
 		log.Error("oauth redirect failed", zap.Error(err))
 		return nil, status.Errorf(codes.Internal, "oauth failed: %v", err)

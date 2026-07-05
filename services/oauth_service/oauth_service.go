@@ -62,7 +62,7 @@ func NewOAuthService(
 	}
 }
 
-func (s *OAuthService) GetRedirectURL(ctx context.Context, provider string) (string, error) {
+func (s *OAuthService) GetRedirectURL(ctx context.Context, provider, appRedirectURI string) (string, error) {
 	log := middleware.FromContext(ctx, s.logger)
 
 	cfg, ok := s.configs[provider]
@@ -76,8 +76,7 @@ func (s *OAuthService) GetRedirectURL(ctx context.Context, provider string) (str
 		return "", err
 	}
 
-	// Store state in Redis with 10min TTL
-	if err := s.tokenStore.SaveOAuthState(ctx, state, provider); err != nil {
+	if err := s.tokenStore.SaveOAuthState(ctx, state, provider, appRedirectURI); err != nil {
 		return "", fmt.Errorf("saving oauth state: %w", err)
 	}
 
@@ -97,7 +96,7 @@ func (s *OAuthService) HandleCallback(ctx context.Context, provider, code, state
 	log := middleware.FromContext(ctx, s.logger)
 
 	// Validate state
-	savedProvider, err := s.tokenStore.GetOAuthState(ctx, state)
+	savedProvider, _, err := s.tokenStore.GetOAuthState(ctx, state)
 	if err != nil || savedProvider != provider {
 		return nil, fmt.Errorf("invalid oauth state")
 	}
@@ -340,4 +339,12 @@ func randomHex(n int) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(b), nil
+}
+
+func (s *OAuthService) PeekAppRedirect(ctx context.Context, state string) (string, error) {
+	_, appRedirectURI, err := s.tokenStore.GetOAuthState(ctx, state)
+	if err != nil {
+		return "", err
+	}
+	return appRedirectURI, nil
 }

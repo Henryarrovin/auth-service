@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -99,18 +100,34 @@ func (s *TokenStore) DeleteResetToken(ctx context.Context, token string) error {
 	return s.rdb.Del(ctx, fmt.Sprintf("reset:%s", token)).Err()
 }
 
+type oauthStateValue struct {
+	Provider       string `json:"provider"`
+	AppRedirectURI string `json:"app_redirect_uri,omitempty"`
+}
+
 // SaveOAuthState stores OAuth state for CSRF protection
-func (s *TokenStore) SaveOAuthState(ctx context.Context, state, provider string) error {
-	return s.rdb.Set(ctx, "oauth:state:"+state, provider, 10*time.Minute).Err()
+func (s *TokenStore) SaveOAuthState(ctx context.Context, state, provider, appRedirectURI string) error {
+	val, err := json.Marshal(oauthStateValue{Provider: provider, AppRedirectURI: appRedirectURI})
+	if err != nil {
+		return err
+	}
+	return s.rdb.Set(ctx, "oauth:state:"+state, val, 10*time.Minute).Err()
 }
 
 // GetOAuthState retrieves the provider for a given state
-func (s *TokenStore) GetOAuthState(ctx context.Context, state string) (string, error) {
-	provider, err := s.rdb.Get(ctx, "oauth:state:"+state).Result()
+func (s *TokenStore) GetOAuthState(ctx context.Context, state string) (provider, appRedirectURI string, err error) {
+	raw, err := s.rdb.Get(ctx, "oauth:state:"+state).Result()
 	if err == redis.Nil {
-		return "", fmt.Errorf("oauth state expired or invalid")
+		return "", "", fmt.Errorf("oauth state expired or invalid")
 	}
-	return provider, err
+	if err != nil {
+		return "", "", err
+	}
+	var val oauthStateValue
+	if jsonErr := json.Unmarshal([]byte(raw), &val); jsonErr != nil {
+		return raw, "", nil
+	}
+	return val.Provider, val.AppRedirectURI, nil
 }
 
 // DeleteOAuthState removes the state after use
