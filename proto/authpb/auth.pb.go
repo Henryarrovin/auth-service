@@ -1083,10 +1083,11 @@ func (x *ResetPasswordResponse) GetMessage() string {
 }
 
 type OAuthLoginRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Provider      string                 `protobuf:"bytes,1,opt,name=provider,proto3" json:"provider,omitempty"` // "google" | "github"
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Provider       string                 `protobuf:"bytes,1,opt,name=provider,proto3" json:"provider,omitempty"` // "google" | "github"
+	AppRedirectUri string                 `protobuf:"bytes,2,opt,name=app_redirect_uri,json=appRedirectUri,proto3" json:"app_redirect_uri,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *OAuthLoginRequest) Reset() {
@@ -1122,6 +1123,13 @@ func (*OAuthLoginRequest) Descriptor() ([]byte, []int) {
 func (x *OAuthLoginRequest) GetProvider() string {
 	if x != nil {
 		return x.Provider
+	}
+	return ""
+}
+
+func (x *OAuthLoginRequest) GetAppRedirectUri() string {
+	if x != nil {
+		return x.AppRedirectUri
 	}
 	return ""
 }
@@ -2069,9 +2077,10 @@ const file_auth_proto_rawDesc = "" +
 	"\fnew_password\x18\x02 \x01(\tR\vnewPassword\"K\n" +
 	"\x15ResetPasswordResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\"/\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"Y\n" +
 	"\x11OAuthLoginRequest\x12\x1a\n" +
-	"\bprovider\x18\x01 \x01(\tR\bprovider\"7\n" +
+	"\bprovider\x18\x01 \x01(\tR\bprovider\x12(\n" +
+	"\x10app_redirect_uri\x18\x02 \x01(\tR\x0eappRedirectUri\"7\n" +
 	"\x12OAuthLoginResponse\x12!\n" +
 	"\fredirect_url\x18\x01 \x01(\tR\vredirectUrl\"\\\n" +
 	"\x14OAuthCallbackRequest\x12\x1a\n" +
@@ -2138,7 +2147,7 @@ const file_auth_proto_rawDesc = "" +
 	"kdf_params\x18\x03 \x01(\tR\tkdfParams\x12\x1f\n" +
 	"\vwrapped_dek\x18\x04 \x01(\tR\n" +
 	"wrappedDek\x12*\n" +
-	"\x11wrapped_dek_nonce\x18\x05 \x01(\tR\x0fwrappedDekNonce2\xb3\x0e\n" +
+	"\x11wrapped_dek_nonce\x18\x05 \x01(\tR\x0fwrappedDekNonce2\xab\x0e\n" +
 	"\vAuthService\x12a\n" +
 	"\bRegister\x12\x18.auth.v1.RegisterRequest\x1a\x19.auth.v1.RegisterResponse\" \x82\xd3\xe4\x93\x02\x1a:\x01*\"\x15/api/v1/auth/register\x12U\n" +
 	"\x05Login\x12\x15.auth.v1.LoginRequest\x1a\x16.auth.v1.LoginResponse\"\x1d\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/api/v1/auth/login\x12]\n" +
@@ -2151,8 +2160,8 @@ const file_auth_proto_rawDesc = "" +
 	"\x0eForgotPassword\x12\x1e.auth.v1.ForgotPasswordRequest\x1a\x1f.auth.v1.ForgotPasswordResponse\"'\x82\xd3\xe4\x93\x02!:\x01*\"\x1c/api/v1/auth/forgot-password\x12v\n" +
 	"\rResetPassword\x12\x1d.auth.v1.ResetPasswordRequest\x1a\x1e.auth.v1.ResetPasswordResponse\"&\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/api/v1/auth/reset-password\x12l\n" +
 	"\n" +
-	"OAuthLogin\x12\x1a.auth.v1.OAuthLoginRequest\x1a\x1b.auth.v1.OAuthLoginResponse\"%\x82\xd3\xe4\x93\x02\x1f\x12\x1d/api/v1/auth/oauth/{provider}\x12~\n" +
-	"\rOAuthCallback\x12\x1d.auth.v1.OAuthCallbackRequest\x1a\x1e.auth.v1.OAuthCallbackResponse\".\x82\xd3\xe4\x93\x02(\x12&/api/v1/auth/oauth/{provider}/callback\x12f\n" +
+	"OAuthLogin\x12\x1a.auth.v1.OAuthLoginRequest\x1a\x1b.auth.v1.OAuthLoginResponse\"%\x82\xd3\xe4\x93\x02\x1f\x12\x1d/api/v1/auth/oauth/{provider}\x12v\n" +
+	"\rOAuthCallback\x12\x1d.auth.v1.OAuthCallbackRequest\x1a\x1e.auth.v1.OAuthCallbackResponse\"&\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/api/v1/auth/oauth/exchange\x12f\n" +
 	"\tVerifyOTP\x12\x19.auth.v1.VerifyOTPRequest\x1a\x1a.auth.v1.VerifyOTPResponse\"\"\x82\xd3\xe4\x93\x02\x1c:\x01*\"\x17/api/v1/auth/verify-otp\x12b\n" +
 	"\bSetup2FA\x12\x18.auth.v1.Setup2FARequest\x1a\x19.auth.v1.Setup2FAResponse\"!\x82\xd3\xe4\x93\x02\x1b:\x01*\"\x16/api/v1/auth/2fa/setup\x12f\n" +
 	"\tEnable2FA\x12\x19.auth.v1.Enable2FARequest\x1a\x1a.auth.v1.Enable2FAResponse\"\"\x82\xd3\xe4\x93\x02\x1c:\x01*\"\x17/api/v1/auth/2fa/enable\x12j\n" +

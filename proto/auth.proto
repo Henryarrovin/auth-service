@@ -77,7 +77,8 @@ service AuthService {
 
   rpc OAuthCallback (OAuthCallbackRequest) returns (OAuthCallbackResponse) {
     option (google.api.http) = {
-      get: "/api/v1/auth/oauth/{provider}/callback"
+      post: "/api/v1/auth/oauth/exchange"
+      body: "*"
     };
   }
 
@@ -235,6 +236,7 @@ message ResetPasswordResponse {
 
 message OAuthLoginRequest {
   string provider = 1; // "google" | "github"
+  string app_redirect_uri = 2;
 }
 
 message OAuthLoginResponse {
