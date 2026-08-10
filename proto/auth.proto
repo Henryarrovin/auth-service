@@ -128,6 +128,20 @@ service AuthService {
       body: "*"
     };
   }
+
+  rpc VerifyEmail (VerifyEmailRequest) returns (VerifyEmailResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/verify-email"
+      body: "*"
+    };
+  }
+
+  rpc ResendVerification (ResendVerificationRequest) returns (ResendVerificationResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/resend-verification"
+      body: "*"
+    };
+  }
 }
 
 message Role {
@@ -146,6 +160,7 @@ message RegisterResponse {
   string user_id = 1;
   string email   = 2;
   string message = 3;
+  bool   verification_required = 4;
 }
 
 message LoginRequest {
@@ -323,4 +338,25 @@ message GetSyncKeyResponse {
   string kdf_params        = 3;
   string wrapped_dek       = 4;
   string wrapped_dek_nonce = 5;
+}
+
+message VerifyEmailRequest {
+  string email = 1;
+  string otp   = 2;
+}
+
+message VerifyEmailResponse {
+  string access_token  = 1;
+  string refresh_token = 2;
+  int64  expires_in    = 3;
+  string token_type    = 4;
+  string message       = 5;
+}
+
+message ResendVerificationRequest {
+  string email = 1;
+}
+
+message ResendVerificationResponse {
+  string message = 1;
 }
