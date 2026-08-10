@@ -174,3 +174,10 @@ func (r *UserRepository) SetSyncKeyMaterial(ctx context.Context, userID, salt, k
 			"wrapped_dek_nonce": wrappedNonce,
 		}).Error
 }
+
+func (r *UserRepository) MarkEmailVerified(ctx context.Context, userID string) error {
+	return r.db.WithContext(ctx).
+		Model(&models.User{}).
+		Where("id = ?", userID).
+		Update("email_verified", true).Error
+}
