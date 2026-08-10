@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"errors"
 
 	"github.com/Henryarrovin/auth-service/middleware"
 	"github.com/Henryarrovin/auth-service/services/auth_service"
@@ -46,13 +47,14 @@ func (h *AuthHandler) Register(ctx context.Context, req *authpb.RegisterRequest)
 	})
 	if err != nil {
 		log.Error("err.auth_service.register_failed", zap.Error(err))
-		return nil, status.Errorf(codes.Internal, "registration failed: %v", err)
+		return nil, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	return &authpb.RegisterResponse{
-		UserId:  user.ID,
-		Email:   user.Email,
-		Message: "user registered successfully",
+		UserId:               user.ID,
+		Email:                user.Email,
+		Message:              "we've sent a verification code to your email",
+		VerificationRequired: true,
 	}, nil
 }
 
@@ -66,6 +68,10 @@ func (h *AuthHandler) Login(ctx context.Context, req *authpb.LoginRequest) (*aut
 
 	result, err := h.svc.Login(ctx, req.Email, req.Password)
 	if err != nil {
+		if errors.Is(err, auth_service.ErrEmailNotVerified) {
+			log.Warn("login blocked: email not verified", zap.String("email", req.Email))
+			return nil, status.Error(codes.FailedPrecondition, err.Error())
+		}
 		log.Warn("login failed", zap.String("email", req.Email), zap.Error(err))
 		return nil, status.Error(codes.Unauthenticated, err.Error())
 	}
@@ -383,5 +389,44 @@ func (h *AuthHandler) GetSyncKey(ctx context.Context, req *authpb.GetSyncKeyRequ
 		KdfParams:       material.KDFParams,
 		WrappedDek:      material.WrappedDEK,
 		WrappedDekNonce: material.WrappedDEKNonce,
+	}, nil
+}
+
+func (h *AuthHandler) VerifyEmail(ctx context.Context, req *authpb.VerifyEmailRequest) (*authpb.VerifyEmailResponse, error) {
+	log := middleware.FromContext(ctx, h.logger)
+
+	if req.Email == "" || req.Otp == "" {
+		return nil, status.Error(codes.InvalidArgument, "email and otp are required")
+	}
+
+	pair, err := h.svc.VerifyEmail(ctx, req.Email, req.Otp)
+	if err != nil {
+		log.Warn("email verification failed", zap.String("email", req.Email), zap.Error(err))
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &authpb.VerifyEmailResponse{
+		AccessToken:  pair.AccessToken,
+		RefreshToken: pair.RefreshToken,
+		ExpiresIn:    pair.ExpiresIn,
+		TokenType:    "Bearer",
+		Message:      "email verified successfully",
+	}, nil
+}
+
+func (h *AuthHandler) ResendVerification(ctx context.Context, req *authpb.ResendVerificationRequest) (*authpb.ResendVerificationResponse, error) {
+	log := middleware.FromContext(ctx, h.logger)
+
+	if req.Email == "" {
+		return nil, status.Error(codes.InvalidArgument, "email is required")
+	}
+
+	if err := h.svc.ResendVerification(ctx, req.Email); err != nil {
+		log.Error("resend verification failed", zap.String("email", req.Email), zap.Error(err))
+		return nil, status.Errorf(codes.Internal, "failed to resend verification email")
+	}
+
+	return &authpb.ResendVerificationResponse{
+		Message: "if this email needs verification, a new code has been sent",
 	}, nil
 }

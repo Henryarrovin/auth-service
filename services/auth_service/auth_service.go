@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"math/big"
 	"strings"
 
 	"github.com/Henryarrovin/auth-service/data"
@@ -17,6 +18,8 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
+
+var ErrEmailNotVerified = fmt.Errorf("email not verified — check your inbox for the verification code")
 
 type AuthService struct {
 	users      *data.UserRepository
@@ -40,7 +43,8 @@ func NewAuthService(
 
 func (s *AuthService) Register(ctx context.Context, in RegisterInput) (*models.User, error) {
 	log := middleware.FromContext(ctx, s.logger)
-	log.Info("registering user", zap.String("email", in.Email))
+	email := strings.ToLower(strings.TrimSpace(in.Email))
+	log.Info("registering user", zap.String("email", email))
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(in.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -54,18 +58,36 @@ func (s *AuthService) Register(ctx context.Context, in RegisterInput) (*models.U
 	}
 
 	user := &models.User{
-		Email:        in.Email,
-		Name:         in.Name,
-		PasswordHash: string(hash),
+		Email:         email,
+		Name:          in.Name,
+		PasswordHash:  string(hash),
+		EmailVerified: false,
 	}
 	if err := s.users.Create(ctx, user, role); err != nil {
-		log.Error("err.auth_service.creating_user_failed", zap.String("email", in.Email), zap.Error(err))
+		if isDuplicateEmailErr(err) {
+			log.Warn("warn.auth_service.duplicate_email", zap.String("email", email))
+			return nil, fmt.Errorf("an account with this email already exists")
+		}
+		log.Error("err.auth_service.creating_user_failed", zap.String("email", email), zap.Error(err))
 		return nil, fmt.Errorf("creating user: %w", err)
 	}
 	user.Roles = []models.Role{{Name: role}}
-	log.Info("user registered",
+
+	otp, err := randomOTP()
+	if err != nil {
+		return nil, fmt.Errorf("generating verification otp: %w", err)
+	}
+	if err := s.tokenStore.SaveEmailOTP(ctx, email, otp); err != nil {
+		return nil, fmt.Errorf("saving verification otp: %w", err)
+	}
+	if err := s.email.SendVerificationOTP(email, otp); err != nil {
+		log.Error("err.auth_service.sending_verification_email_failed", zap.String("email", email), zap.Error(err))
+		return nil, fmt.Errorf("we couldn't send a verification email to that address — double check it's correct")
+	}
+
+	log.Info("user registered, verification email sent",
 		zap.String("user_id", user.ID),
-		zap.String("email", user.Email),
+		zap.String("email", email),
 		zap.String("role", role),
 	)
 	return user, nil
@@ -92,6 +114,11 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (*Login
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
 		log.Warn("warn.auth_service.invalid_password", zap.String("email", email))
 		return nil, fmt.Errorf("invalid credentials")
+	}
+
+	if !user.EmailVerified && !user.IsOAuthUser() {
+		log.Warn("warn.auth_service.login_email_not_verified", zap.String("user_id", user.ID))
+		return nil, ErrEmailNotVerified
 	}
 
 	// Check if 2FA is enabled
@@ -542,4 +569,90 @@ func (s *AuthService) GetSyncKey(ctx context.Context, accessToken string) (*Sync
 		WrappedDEK:      user.WrappedDEK,
 		WrappedDEKNonce: user.WrappedDEKNonce,
 	}, nil
+}
+
+func (s *AuthService) VerifyEmail(ctx context.Context, email, otp string) (*TokenPair, error) {
+	log := middleware.FromContext(ctx, s.logger)
+	email = strings.ToLower(strings.TrimSpace(email))
+	log.Info("verifying email", zap.String("email", email))
+
+	stored, err := s.tokenStore.GetEmailOTP(ctx, email)
+	if err != nil {
+		log.Warn("invalid or expired email otp", zap.String("email", email), zap.Error(err))
+		return nil, fmt.Errorf("invalid or expired verification code")
+	}
+	if stored != otp {
+		log.Warn("wrong email otp", zap.String("email", email))
+		return nil, fmt.Errorf("incorrect verification code")
+	}
+
+	user, err := s.users.FindByEmail(ctx, email)
+	if err != nil {
+		return nil, fmt.Errorf("user not found")
+	}
+
+	if err := s.users.MarkEmailVerified(ctx, user.ID); err != nil {
+		return nil, fmt.Errorf("marking email verified: %w", err)
+	}
+	user.EmailVerified = true
+
+	_ = s.tokenStore.DeleteEmailOTP(ctx, email)
+
+	if err := s.email.SendWelcomeEmail(user.Email, user.Name); err != nil {
+		// don't fail verification just because the welcome email didn't send
+		log.Warn("failed to send welcome email", zap.String("email", email), zap.Error(err))
+	}
+
+	pair, err := s.issuePair(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Info("email verified", zap.String("user_id", user.ID))
+	return pair, nil
+}
+
+func (s *AuthService) ResendVerification(ctx context.Context, email string) error {
+	log := middleware.FromContext(ctx, s.logger)
+	email = strings.ToLower(strings.TrimSpace(email))
+
+	user, err := s.users.FindByEmail(ctx, email)
+	if err != nil {
+		// don't reveal whether the account exists
+		log.Warn("resend verification for unknown email", zap.String("email", email))
+		return nil
+	}
+	if user.EmailVerified {
+		return nil
+	}
+
+	otp, err := randomOTP()
+	if err != nil {
+		return fmt.Errorf("generating verification otp: %w", err)
+	}
+	if err := s.tokenStore.SaveEmailOTP(ctx, email, otp); err != nil {
+		return fmt.Errorf("saving verification otp: %w", err)
+	}
+	if err := s.email.SendVerificationOTP(email, otp); err != nil {
+		return fmt.Errorf("sending verification email: %w", err)
+	}
+
+	log.Info("verification email resent", zap.String("email", email))
+	return nil
+}
+
+func randomOTP() (string, error) {
+	max := big.NewInt(1000000)
+	n, err := rand.Int(rand.Reader, max)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%06d", n.Int64()), nil
+}
+
+func isDuplicateEmailErr(err error) bool {
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "duplicate") ||
+		strings.Contains(msg, "unique constraint") ||
+		strings.Contains(msg, "23505")
 }
