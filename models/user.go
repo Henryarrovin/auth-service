@@ -31,6 +31,7 @@ type User struct {
 	Provider         string `gorm:"default:'local'"` // "local" | "google" | "github"
 	ProviderID       string // OAuth provider's user ID
 	AvatarURL        string // profile picture from OAuth
+	EmailVerified    bool   `gorm:"default:false"`
 	TwoFASecret      string // TOTP secret
 	TwoFAEnabled     bool   `gorm:"default:false"`
 	TwoFABackupCodes string // JSON array of hashed backup codes
