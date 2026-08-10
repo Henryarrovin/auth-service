@@ -154,3 +154,24 @@ func (s *TokenStore) GetTempToken(ctx context.Context, tempToken string) (string
 func (s *TokenStore) DeleteTempToken(ctx context.Context, tempToken string) error {
 	return s.rdb.Del(ctx, "2fa:temp:"+tempToken).Err()
 }
+
+// SaveEmailOTP stores an email verification code with a 10min TTL
+func (s *TokenStore) SaveEmailOTP(ctx context.Context, email, otp string) error {
+	key := fmt.Sprintf("emailverify:%s", email)
+	return s.rdb.Set(ctx, key, otp, 10*time.Minute).Err()
+}
+
+// GetEmailOTP returns the code stored for an email
+func (s *TokenStore) GetEmailOTP(ctx context.Context, email string) (string, error) {
+	key := fmt.Sprintf("emailverify:%s", email)
+	otp, err := s.rdb.Get(ctx, key).Result()
+	if err == redis.Nil {
+		return "", fmt.Errorf("verification code expired or invalid")
+	}
+	return otp, err
+}
+
+// DeleteEmailOTP removes the code after it's used
+func (s *TokenStore) DeleteEmailOTP(ctx context.Context, email string) error {
+	return s.rdb.Del(ctx, fmt.Sprintf("emailverify:%s", email)).Err()
+}
