@@ -143,12 +143,13 @@ func (x *RegisterRequest) GetRole() string {
 }
 
 type RegisterResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Email         string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
-	Message       string                 `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	UserId               string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Email                string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
+	Message              string                 `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
+	VerificationRequired bool                   `protobuf:"varint,4,opt,name=verification_required,json=verificationRequired,proto3" json:"verification_required,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *RegisterResponse) Reset() {
@@ -200,6 +201,13 @@ func (x *RegisterResponse) GetMessage() string {
 		return x.Message
 	}
 	return ""
+}
+
+func (x *RegisterResponse) GetVerificationRequired() bool {
+	if x != nil {
+		return x.VerificationRequired
+	}
+	return false
 }
 
 type LoginRequest struct {
@@ -2002,6 +2010,222 @@ func (x *GetSyncKeyResponse) GetWrappedDekNonce() string {
 	return ""
 }
 
+type VerifyEmailRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	Otp           string                 `protobuf:"bytes,2,opt,name=otp,proto3" json:"otp,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *VerifyEmailRequest) Reset() {
+	*x = VerifyEmailRequest{}
+	mi := &file_auth_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VerifyEmailRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VerifyEmailRequest) ProtoMessage() {}
+
+func (x *VerifyEmailRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VerifyEmailRequest.ProtoReflect.Descriptor instead.
+func (*VerifyEmailRequest) Descriptor() ([]byte, []int) {
+	return file_auth_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *VerifyEmailRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *VerifyEmailRequest) GetOtp() string {
+	if x != nil {
+		return x.Otp
+	}
+	return ""
+}
+
+type VerifyEmailResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	RefreshToken  string                 `protobuf:"bytes,2,opt,name=refresh_token,json=refreshToken,proto3" json:"refresh_token,omitempty"`
+	ExpiresIn     int64                  `protobuf:"varint,3,opt,name=expires_in,json=expiresIn,proto3" json:"expires_in,omitempty"`
+	TokenType     string                 `protobuf:"bytes,4,opt,name=token_type,json=tokenType,proto3" json:"token_type,omitempty"`
+	Message       string                 `protobuf:"bytes,5,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *VerifyEmailResponse) Reset() {
+	*x = VerifyEmailResponse{}
+	mi := &file_auth_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VerifyEmailResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VerifyEmailResponse) ProtoMessage() {}
+
+func (x *VerifyEmailResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VerifyEmailResponse.ProtoReflect.Descriptor instead.
+func (*VerifyEmailResponse) Descriptor() ([]byte, []int) {
+	return file_auth_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *VerifyEmailResponse) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *VerifyEmailResponse) GetRefreshToken() string {
+	if x != nil {
+		return x.RefreshToken
+	}
+	return ""
+}
+
+func (x *VerifyEmailResponse) GetExpiresIn() int64 {
+	if x != nil {
+		return x.ExpiresIn
+	}
+	return 0
+}
+
+func (x *VerifyEmailResponse) GetTokenType() string {
+	if x != nil {
+		return x.TokenType
+	}
+	return ""
+}
+
+func (x *VerifyEmailResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+type ResendVerificationRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResendVerificationRequest) Reset() {
+	*x = ResendVerificationRequest{}
+	mi := &file_auth_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResendVerificationRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResendVerificationRequest) ProtoMessage() {}
+
+func (x *ResendVerificationRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResendVerificationRequest.ProtoReflect.Descriptor instead.
+func (*ResendVerificationRequest) Descriptor() ([]byte, []int) {
+	return file_auth_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *ResendVerificationRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+type ResendVerificationResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Message       string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResendVerificationResponse) Reset() {
+	*x = ResendVerificationResponse{}
+	mi := &file_auth_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResendVerificationResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResendVerificationResponse) ProtoMessage() {}
+
+func (x *ResendVerificationResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResendVerificationResponse.ProtoReflect.Descriptor instead.
+func (*ResendVerificationResponse) Descriptor() ([]byte, []int) {
+	return file_auth_proto_rawDescGZIP(), []int{38}
+}
+
+func (x *ResendVerificationResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
 var File_auth_proto protoreflect.FileDescriptor
 
 const file_auth_proto_rawDesc = "" +
@@ -2015,11 +2239,12 @@ const file_auth_proto_rawDesc = "" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1a\n" +
 	"\bpassword\x18\x02 \x01(\tR\bpassword\x12\x12\n" +
 	"\x04name\x18\x03 \x01(\tR\x04name\x12\x12\n" +
-	"\x04role\x18\x04 \x01(\tR\x04role\"[\n" +
+	"\x04role\x18\x04 \x01(\tR\x04role\"\x90\x01\n" +
 	"\x10RegisterResponse\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x12\x18\n" +
-	"\amessage\x18\x03 \x01(\tR\amessage\"@\n" +
+	"\amessage\x18\x03 \x01(\tR\amessage\x123\n" +
+	"\x15verification_required\x18\x04 \x01(\bR\x14verificationRequired\"@\n" +
 	"\fLoginRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1a\n" +
 	"\bpassword\x18\x02 \x01(\tR\bpassword\"\xd7\x01\n" +
@@ -2147,7 +2372,22 @@ const file_auth_proto_rawDesc = "" +
 	"kdf_params\x18\x03 \x01(\tR\tkdfParams\x12\x1f\n" +
 	"\vwrapped_dek\x18\x04 \x01(\tR\n" +
 	"wrappedDek\x12*\n" +
-	"\x11wrapped_dek_nonce\x18\x05 \x01(\tR\x0fwrappedDekNonce2\xab\x0e\n" +
+	"\x11wrapped_dek_nonce\x18\x05 \x01(\tR\x0fwrappedDekNonce\"<\n" +
+	"\x12VerifyEmailRequest\x12\x14\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\x12\x10\n" +
+	"\x03otp\x18\x02 \x01(\tR\x03otp\"\xb5\x01\n" +
+	"\x13VerifyEmailResponse\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12#\n" +
+	"\rrefresh_token\x18\x02 \x01(\tR\frefreshToken\x12\x1d\n" +
+	"\n" +
+	"expires_in\x18\x03 \x01(\x03R\texpiresIn\x12\x1d\n" +
+	"\n" +
+	"token_type\x18\x04 \x01(\tR\ttokenType\x12\x18\n" +
+	"\amessage\x18\x05 \x01(\tR\amessage\"1\n" +
+	"\x19ResendVerificationRequest\x12\x14\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\"6\n" +
+	"\x1aResendVerificationResponse\x12\x18\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage2\xa8\x10\n" +
 	"\vAuthService\x12a\n" +
 	"\bRegister\x12\x18.auth.v1.RegisterRequest\x1a\x19.auth.v1.RegisterResponse\" \x82\xd3\xe4\x93\x02\x1a:\x01*\"\x15/api/v1/auth/register\x12U\n" +
 	"\x05Login\x12\x15.auth.v1.LoginRequest\x1a\x16.auth.v1.LoginResponse\"\x1d\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/api/v1/auth/login\x12]\n" +
@@ -2169,7 +2409,9 @@ const file_auth_proto_rawDesc = "" +
 	"Disable2FA\x12\x1a.auth.v1.Disable2FARequest\x1a\x1b.auth.v1.Disable2FAResponse\"#\x82\xd3\xe4\x93\x02\x1d:\x01*\"\x18/api/v1/auth/2fa/disable\x12s\n" +
 	"\fSetupSyncKey\x12\x1c.auth.v1.SetupSyncKeyRequest\x1a\x1d.auth.v1.SetupSyncKeyResponse\"&\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/api/v1/auth/sync-key/setup\x12g\n" +
 	"\n" +
-	"GetSyncKey\x12\x1a.auth.v1.GetSyncKeyRequest\x1a\x1b.auth.v1.GetSyncKeyResponse\" \x82\xd3\xe4\x93\x02\x1a:\x01*\"\x15/api/v1/auth/sync-keyB\x03Z\x01/b\x06proto3"
+	"GetSyncKey\x12\x1a.auth.v1.GetSyncKeyRequest\x1a\x1b.auth.v1.GetSyncKeyResponse\" \x82\xd3\xe4\x93\x02\x1a:\x01*\"\x15/api/v1/auth/sync-key\x12n\n" +
+	"\vVerifyEmail\x12\x1b.auth.v1.VerifyEmailRequest\x1a\x1c.auth.v1.VerifyEmailResponse\"$\x82\xd3\xe4\x93\x02\x1e:\x01*\"\x19/api/v1/auth/verify-email\x12\x8a\x01\n" +
+	"\x12ResendVerification\x12\".auth.v1.ResendVerificationRequest\x1a#.auth.v1.ResendVerificationResponse\"+\x82\xd3\xe4\x93\x02%:\x01*\" /api/v1/auth/resend-verificationB\x03Z\x01/b\x06proto3"
 
 var (
 	file_auth_proto_rawDescOnce sync.Once
@@ -2183,43 +2425,47 @@ func file_auth_proto_rawDescGZIP() []byte {
 	return file_auth_proto_rawDescData
 }
 
-var file_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 35)
+var file_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 39)
 var file_auth_proto_goTypes = []any{
-	(*Role)(nil),                   // 0: auth.v1.Role
-	(*RegisterRequest)(nil),        // 1: auth.v1.RegisterRequest
-	(*RegisterResponse)(nil),       // 2: auth.v1.RegisterResponse
-	(*LoginRequest)(nil),           // 3: auth.v1.LoginRequest
-	(*LoginResponse)(nil),          // 4: auth.v1.LoginResponse
-	(*RefreshRequest)(nil),         // 5: auth.v1.RefreshRequest
-	(*RefreshResponse)(nil),        // 6: auth.v1.RefreshResponse
-	(*LogoutRequest)(nil),          // 7: auth.v1.LogoutRequest
-	(*LogoutResponse)(nil),         // 8: auth.v1.LogoutResponse
-	(*ValidateTokenRequest)(nil),   // 9: auth.v1.ValidateTokenRequest
-	(*ValidateTokenResponse)(nil),  // 10: auth.v1.ValidateTokenResponse
-	(*AssignRoleRequest)(nil),      // 11: auth.v1.AssignRoleRequest
-	(*AssignRoleResponse)(nil),     // 12: auth.v1.AssignRoleResponse
-	(*GetUserRolesRequest)(nil),    // 13: auth.v1.GetUserRolesRequest
-	(*GetUserRolesResponse)(nil),   // 14: auth.v1.GetUserRolesResponse
-	(*ForgotPasswordRequest)(nil),  // 15: auth.v1.ForgotPasswordRequest
-	(*ForgotPasswordResponse)(nil), // 16: auth.v1.ForgotPasswordResponse
-	(*ResetPasswordRequest)(nil),   // 17: auth.v1.ResetPasswordRequest
-	(*ResetPasswordResponse)(nil),  // 18: auth.v1.ResetPasswordResponse
-	(*OAuthLoginRequest)(nil),      // 19: auth.v1.OAuthLoginRequest
-	(*OAuthLoginResponse)(nil),     // 20: auth.v1.OAuthLoginResponse
-	(*OAuthCallbackRequest)(nil),   // 21: auth.v1.OAuthCallbackRequest
-	(*OAuthCallbackResponse)(nil),  // 22: auth.v1.OAuthCallbackResponse
-	(*VerifyOTPRequest)(nil),       // 23: auth.v1.VerifyOTPRequest
-	(*VerifyOTPResponse)(nil),      // 24: auth.v1.VerifyOTPResponse
-	(*Setup2FARequest)(nil),        // 25: auth.v1.Setup2FARequest
-	(*Setup2FAResponse)(nil),       // 26: auth.v1.Setup2FAResponse
-	(*Enable2FARequest)(nil),       // 27: auth.v1.Enable2FARequest
-	(*Enable2FAResponse)(nil),      // 28: auth.v1.Enable2FAResponse
-	(*Disable2FARequest)(nil),      // 29: auth.v1.Disable2FARequest
-	(*Disable2FAResponse)(nil),     // 30: auth.v1.Disable2FAResponse
-	(*SetupSyncKeyRequest)(nil),    // 31: auth.v1.SetupSyncKeyRequest
-	(*SetupSyncKeyResponse)(nil),   // 32: auth.v1.SetupSyncKeyResponse
-	(*GetSyncKeyRequest)(nil),      // 33: auth.v1.GetSyncKeyRequest
-	(*GetSyncKeyResponse)(nil),     // 34: auth.v1.GetSyncKeyResponse
+	(*Role)(nil),                       // 0: auth.v1.Role
+	(*RegisterRequest)(nil),            // 1: auth.v1.RegisterRequest
+	(*RegisterResponse)(nil),           // 2: auth.v1.RegisterResponse
+	(*LoginRequest)(nil),               // 3: auth.v1.LoginRequest
+	(*LoginResponse)(nil),              // 4: auth.v1.LoginResponse
+	(*RefreshRequest)(nil),             // 5: auth.v1.RefreshRequest
+	(*RefreshResponse)(nil),            // 6: auth.v1.RefreshResponse
+	(*LogoutRequest)(nil),              // 7: auth.v1.LogoutRequest
+	(*LogoutResponse)(nil),             // 8: auth.v1.LogoutResponse
+	(*ValidateTokenRequest)(nil),       // 9: auth.v1.ValidateTokenRequest
+	(*ValidateTokenResponse)(nil),      // 10: auth.v1.ValidateTokenResponse
+	(*AssignRoleRequest)(nil),          // 11: auth.v1.AssignRoleRequest
+	(*AssignRoleResponse)(nil),         // 12: auth.v1.AssignRoleResponse
+	(*GetUserRolesRequest)(nil),        // 13: auth.v1.GetUserRolesRequest
+	(*GetUserRolesResponse)(nil),       // 14: auth.v1.GetUserRolesResponse
+	(*ForgotPasswordRequest)(nil),      // 15: auth.v1.ForgotPasswordRequest
+	(*ForgotPasswordResponse)(nil),     // 16: auth.v1.ForgotPasswordResponse
+	(*ResetPasswordRequest)(nil),       // 17: auth.v1.ResetPasswordRequest
+	(*ResetPasswordResponse)(nil),      // 18: auth.v1.ResetPasswordResponse
+	(*OAuthLoginRequest)(nil),          // 19: auth.v1.OAuthLoginRequest
+	(*OAuthLoginResponse)(nil),         // 20: auth.v1.OAuthLoginResponse
+	(*OAuthCallbackRequest)(nil),       // 21: auth.v1.OAuthCallbackRequest
+	(*OAuthCallbackResponse)(nil),      // 22: auth.v1.OAuthCallbackResponse
+	(*VerifyOTPRequest)(nil),           // 23: auth.v1.VerifyOTPRequest
+	(*VerifyOTPResponse)(nil),          // 24: auth.v1.VerifyOTPResponse
+	(*Setup2FARequest)(nil),            // 25: auth.v1.Setup2FARequest
+	(*Setup2FAResponse)(nil),           // 26: auth.v1.Setup2FAResponse
+	(*Enable2FARequest)(nil),           // 27: auth.v1.Enable2FARequest
+	(*Enable2FAResponse)(nil),          // 28: auth.v1.Enable2FAResponse
+	(*Disable2FARequest)(nil),          // 29: auth.v1.Disable2FARequest
+	(*Disable2FAResponse)(nil),         // 30: auth.v1.Disable2FAResponse
+	(*SetupSyncKeyRequest)(nil),        // 31: auth.v1.SetupSyncKeyRequest
+	(*SetupSyncKeyResponse)(nil),       // 32: auth.v1.SetupSyncKeyResponse
+	(*GetSyncKeyRequest)(nil),          // 33: auth.v1.GetSyncKeyRequest
+	(*GetSyncKeyResponse)(nil),         // 34: auth.v1.GetSyncKeyResponse
+	(*VerifyEmailRequest)(nil),         // 35: auth.v1.VerifyEmailRequest
+	(*VerifyEmailResponse)(nil),        // 36: auth.v1.VerifyEmailResponse
+	(*ResendVerificationRequest)(nil),  // 37: auth.v1.ResendVerificationRequest
+	(*ResendVerificationResponse)(nil), // 38: auth.v1.ResendVerificationResponse
 }
 var file_auth_proto_depIdxs = []int32{
 	0,  // 0: auth.v1.GetUserRolesResponse.roles:type_name -> auth.v1.Role
@@ -2240,25 +2486,29 @@ var file_auth_proto_depIdxs = []int32{
 	29, // 15: auth.v1.AuthService.Disable2FA:input_type -> auth.v1.Disable2FARequest
 	31, // 16: auth.v1.AuthService.SetupSyncKey:input_type -> auth.v1.SetupSyncKeyRequest
 	33, // 17: auth.v1.AuthService.GetSyncKey:input_type -> auth.v1.GetSyncKeyRequest
-	2,  // 18: auth.v1.AuthService.Register:output_type -> auth.v1.RegisterResponse
-	4,  // 19: auth.v1.AuthService.Login:output_type -> auth.v1.LoginResponse
-	6,  // 20: auth.v1.AuthService.Refresh:output_type -> auth.v1.RefreshResponse
-	8,  // 21: auth.v1.AuthService.Logout:output_type -> auth.v1.LogoutResponse
-	10, // 22: auth.v1.AuthService.ValidateToken:output_type -> auth.v1.ValidateTokenResponse
-	12, // 23: auth.v1.AuthService.AssignRole:output_type -> auth.v1.AssignRoleResponse
-	14, // 24: auth.v1.AuthService.GetUserRoles:output_type -> auth.v1.GetUserRolesResponse
-	16, // 25: auth.v1.AuthService.ForgotPassword:output_type -> auth.v1.ForgotPasswordResponse
-	18, // 26: auth.v1.AuthService.ResetPassword:output_type -> auth.v1.ResetPasswordResponse
-	20, // 27: auth.v1.AuthService.OAuthLogin:output_type -> auth.v1.OAuthLoginResponse
-	22, // 28: auth.v1.AuthService.OAuthCallback:output_type -> auth.v1.OAuthCallbackResponse
-	24, // 29: auth.v1.AuthService.VerifyOTP:output_type -> auth.v1.VerifyOTPResponse
-	26, // 30: auth.v1.AuthService.Setup2FA:output_type -> auth.v1.Setup2FAResponse
-	28, // 31: auth.v1.AuthService.Enable2FA:output_type -> auth.v1.Enable2FAResponse
-	30, // 32: auth.v1.AuthService.Disable2FA:output_type -> auth.v1.Disable2FAResponse
-	32, // 33: auth.v1.AuthService.SetupSyncKey:output_type -> auth.v1.SetupSyncKeyResponse
-	34, // 34: auth.v1.AuthService.GetSyncKey:output_type -> auth.v1.GetSyncKeyResponse
-	18, // [18:35] is the sub-list for method output_type
-	1,  // [1:18] is the sub-list for method input_type
+	35, // 18: auth.v1.AuthService.VerifyEmail:input_type -> auth.v1.VerifyEmailRequest
+	37, // 19: auth.v1.AuthService.ResendVerification:input_type -> auth.v1.ResendVerificationRequest
+	2,  // 20: auth.v1.AuthService.Register:output_type -> auth.v1.RegisterResponse
+	4,  // 21: auth.v1.AuthService.Login:output_type -> auth.v1.LoginResponse
+	6,  // 22: auth.v1.AuthService.Refresh:output_type -> auth.v1.RefreshResponse
+	8,  // 23: auth.v1.AuthService.Logout:output_type -> auth.v1.LogoutResponse
+	10, // 24: auth.v1.AuthService.ValidateToken:output_type -> auth.v1.ValidateTokenResponse
+	12, // 25: auth.v1.AuthService.AssignRole:output_type -> auth.v1.AssignRoleResponse
+	14, // 26: auth.v1.AuthService.GetUserRoles:output_type -> auth.v1.GetUserRolesResponse
+	16, // 27: auth.v1.AuthService.ForgotPassword:output_type -> auth.v1.ForgotPasswordResponse
+	18, // 28: auth.v1.AuthService.ResetPassword:output_type -> auth.v1.ResetPasswordResponse
+	20, // 29: auth.v1.AuthService.OAuthLogin:output_type -> auth.v1.OAuthLoginResponse
+	22, // 30: auth.v1.AuthService.OAuthCallback:output_type -> auth.v1.OAuthCallbackResponse
+	24, // 31: auth.v1.AuthService.VerifyOTP:output_type -> auth.v1.VerifyOTPResponse
+	26, // 32: auth.v1.AuthService.Setup2FA:output_type -> auth.v1.Setup2FAResponse
+	28, // 33: auth.v1.AuthService.Enable2FA:output_type -> auth.v1.Enable2FAResponse
+	30, // 34: auth.v1.AuthService.Disable2FA:output_type -> auth.v1.Disable2FAResponse
+	32, // 35: auth.v1.AuthService.SetupSyncKey:output_type -> auth.v1.SetupSyncKeyResponse
+	34, // 36: auth.v1.AuthService.GetSyncKey:output_type -> auth.v1.GetSyncKeyResponse
+	36, // 37: auth.v1.AuthService.VerifyEmail:output_type -> auth.v1.VerifyEmailResponse
+	38, // 38: auth.v1.AuthService.ResendVerification:output_type -> auth.v1.ResendVerificationResponse
+	20, // [20:39] is the sub-list for method output_type
+	1,  // [1:20] is the sub-list for method input_type
 	1,  // [1:1] is the sub-list for extension type_name
 	1,  // [1:1] is the sub-list for extension extendee
 	0,  // [0:1] is the sub-list for field type_name
@@ -2275,7 +2525,7 @@ func file_auth_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_auth_proto_rawDesc), len(file_auth_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   35,
+			NumMessages:   39,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

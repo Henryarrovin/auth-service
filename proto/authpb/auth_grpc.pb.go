@@ -19,23 +19,25 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AuthService_Register_FullMethodName       = "/auth.v1.AuthService/Register"
-	AuthService_Login_FullMethodName          = "/auth.v1.AuthService/Login"
-	AuthService_Refresh_FullMethodName        = "/auth.v1.AuthService/Refresh"
-	AuthService_Logout_FullMethodName         = "/auth.v1.AuthService/Logout"
-	AuthService_ValidateToken_FullMethodName  = "/auth.v1.AuthService/ValidateToken"
-	AuthService_AssignRole_FullMethodName     = "/auth.v1.AuthService/AssignRole"
-	AuthService_GetUserRoles_FullMethodName   = "/auth.v1.AuthService/GetUserRoles"
-	AuthService_ForgotPassword_FullMethodName = "/auth.v1.AuthService/ForgotPassword"
-	AuthService_ResetPassword_FullMethodName  = "/auth.v1.AuthService/ResetPassword"
-	AuthService_OAuthLogin_FullMethodName     = "/auth.v1.AuthService/OAuthLogin"
-	AuthService_OAuthCallback_FullMethodName  = "/auth.v1.AuthService/OAuthCallback"
-	AuthService_VerifyOTP_FullMethodName      = "/auth.v1.AuthService/VerifyOTP"
-	AuthService_Setup2FA_FullMethodName       = "/auth.v1.AuthService/Setup2FA"
-	AuthService_Enable2FA_FullMethodName      = "/auth.v1.AuthService/Enable2FA"
-	AuthService_Disable2FA_FullMethodName     = "/auth.v1.AuthService/Disable2FA"
-	AuthService_SetupSyncKey_FullMethodName   = "/auth.v1.AuthService/SetupSyncKey"
-	AuthService_GetSyncKey_FullMethodName     = "/auth.v1.AuthService/GetSyncKey"
+	AuthService_Register_FullMethodName           = "/auth.v1.AuthService/Register"
+	AuthService_Login_FullMethodName              = "/auth.v1.AuthService/Login"
+	AuthService_Refresh_FullMethodName            = "/auth.v1.AuthService/Refresh"
+	AuthService_Logout_FullMethodName             = "/auth.v1.AuthService/Logout"
+	AuthService_ValidateToken_FullMethodName      = "/auth.v1.AuthService/ValidateToken"
+	AuthService_AssignRole_FullMethodName         = "/auth.v1.AuthService/AssignRole"
+	AuthService_GetUserRoles_FullMethodName       = "/auth.v1.AuthService/GetUserRoles"
+	AuthService_ForgotPassword_FullMethodName     = "/auth.v1.AuthService/ForgotPassword"
+	AuthService_ResetPassword_FullMethodName      = "/auth.v1.AuthService/ResetPassword"
+	AuthService_OAuthLogin_FullMethodName         = "/auth.v1.AuthService/OAuthLogin"
+	AuthService_OAuthCallback_FullMethodName      = "/auth.v1.AuthService/OAuthCallback"
+	AuthService_VerifyOTP_FullMethodName          = "/auth.v1.AuthService/VerifyOTP"
+	AuthService_Setup2FA_FullMethodName           = "/auth.v1.AuthService/Setup2FA"
+	AuthService_Enable2FA_FullMethodName          = "/auth.v1.AuthService/Enable2FA"
+	AuthService_Disable2FA_FullMethodName         = "/auth.v1.AuthService/Disable2FA"
+	AuthService_SetupSyncKey_FullMethodName       = "/auth.v1.AuthService/SetupSyncKey"
+	AuthService_GetSyncKey_FullMethodName         = "/auth.v1.AuthService/GetSyncKey"
+	AuthService_VerifyEmail_FullMethodName        = "/auth.v1.AuthService/VerifyEmail"
+	AuthService_ResendVerification_FullMethodName = "/auth.v1.AuthService/ResendVerification"
 )
 
 // AuthServiceClient is the client API for AuthService service.
@@ -64,6 +66,8 @@ type AuthServiceClient interface {
 	// GetSyncKey returns the wrapped data key + non-secret salt/KDF params so
 	// a device can re-derive the key-encryption key locally and unwrap it.
 	GetSyncKey(ctx context.Context, in *GetSyncKeyRequest, opts ...grpc.CallOption) (*GetSyncKeyResponse, error)
+	VerifyEmail(ctx context.Context, in *VerifyEmailRequest, opts ...grpc.CallOption) (*VerifyEmailResponse, error)
+	ResendVerification(ctx context.Context, in *ResendVerificationRequest, opts ...grpc.CallOption) (*ResendVerificationResponse, error)
 }
 
 type authServiceClient struct {
@@ -244,6 +248,26 @@ func (c *authServiceClient) GetSyncKey(ctx context.Context, in *GetSyncKeyReques
 	return out, nil
 }
 
+func (c *authServiceClient) VerifyEmail(ctx context.Context, in *VerifyEmailRequest, opts ...grpc.CallOption) (*VerifyEmailResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(VerifyEmailResponse)
+	err := c.cc.Invoke(ctx, AuthService_VerifyEmail_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) ResendVerification(ctx context.Context, in *ResendVerificationRequest, opts ...grpc.CallOption) (*ResendVerificationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResendVerificationResponse)
+	err := c.cc.Invoke(ctx, AuthService_ResendVerification_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthServiceServer is the server API for AuthService service.
 // All implementations must embed UnimplementedAuthServiceServer
 // for forward compatibility.
@@ -270,6 +294,8 @@ type AuthServiceServer interface {
 	// GetSyncKey returns the wrapped data key + non-secret salt/KDF params so
 	// a device can re-derive the key-encryption key locally and unwrap it.
 	GetSyncKey(context.Context, *GetSyncKeyRequest) (*GetSyncKeyResponse, error)
+	VerifyEmail(context.Context, *VerifyEmailRequest) (*VerifyEmailResponse, error)
+	ResendVerification(context.Context, *ResendVerificationRequest) (*ResendVerificationResponse, error)
 	mustEmbedUnimplementedAuthServiceServer()
 }
 
@@ -330,6 +356,12 @@ func (UnimplementedAuthServiceServer) SetupSyncKey(context.Context, *SetupSyncKe
 }
 func (UnimplementedAuthServiceServer) GetSyncKey(context.Context, *GetSyncKeyRequest) (*GetSyncKeyResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetSyncKey not implemented")
+}
+func (UnimplementedAuthServiceServer) VerifyEmail(context.Context, *VerifyEmailRequest) (*VerifyEmailResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method VerifyEmail not implemented")
+}
+func (UnimplementedAuthServiceServer) ResendVerification(context.Context, *ResendVerificationRequest) (*ResendVerificationResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResendVerification not implemented")
 }
 func (UnimplementedAuthServiceServer) mustEmbedUnimplementedAuthServiceServer() {}
 func (UnimplementedAuthServiceServer) testEmbeddedByValue()                     {}
@@ -658,6 +690,42 @@ func _AuthService_GetSyncKey_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_VerifyEmail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VerifyEmailRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).VerifyEmail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_VerifyEmail_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).VerifyEmail(ctx, req.(*VerifyEmailRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_ResendVerification_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResendVerificationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).ResendVerification(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_ResendVerification_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).ResendVerification(ctx, req.(*ResendVerificationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AuthService_ServiceDesc is the grpc.ServiceDesc for AuthService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -732,6 +800,14 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetSyncKey",
 			Handler:    _AuthService_GetSyncKey_Handler,
+		},
+		{
+			MethodName: "VerifyEmail",
+			Handler:    _AuthService_VerifyEmail_Handler,
+		},
+		{
+			MethodName: "ResendVerification",
+			Handler:    _AuthService_ResendVerification_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
