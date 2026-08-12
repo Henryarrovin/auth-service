@@ -1,8 +1,11 @@
 package email_service
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"net/smtp"
+	"time"
 
 	"github.com/Henryarrovin/auth-service/config"
 	"go.uber.org/zap"
@@ -67,8 +70,22 @@ Thanks for signing up!
 }
 
 func (s *EmailService) send(to, subject, body string) error {
-	msg := fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\n\r\n%s",
-		s.cfg.From, to, subject, body)
+	msgID, err := generateMessageID(s.cfg.From)
+	if err != nil {
+		return fmt.Errorf("generating message id: %w", err)
+	}
+
+	msg := fmt.Sprintf(
+		"From: ClipLynk <%s>\r\n"+
+			"To: %s\r\n"+
+			"Subject: %s\r\n"+
+			"Date: %s\r\n"+
+			"Message-ID: %s\r\n"+
+			"MIME-Version: 1.0\r\n"+
+			"Content-Type: text/plain; charset=UTF-8\r\n"+
+			"\r\n%s",
+		s.cfg.From, to, subject, time.Now().Format(time.RFC1123Z), msgID, body,
+	)
 
 	auth := smtp.PlainAuth("", s.cfg.Username, s.cfg.Password, s.cfg.Host)
 	addr := fmt.Sprintf("%s:%d", s.cfg.Host, s.cfg.Port)
@@ -81,4 +98,25 @@ func (s *EmailService) send(to, subject, body string) error {
 
 	s.logger.Info("email sent", zap.String("to", to), zap.String("subject", subject))
 	return nil
+}
+
+func generateMessageID(from string) (string, error) {
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	domain := "cliplynk.local"
+	if at := indexOf(from, '@'); at != -1 {
+		domain = from[at+1:]
+	}
+	return fmt.Sprintf("<%s@%s>", hex.EncodeToString(b), domain), nil
+}
+
+func indexOf(s string, c byte) int {
+	for i := 0; i < len(s); i++ {
+		if s[i] == c {
+			return i
+		}
+	}
+	return -1
 }
