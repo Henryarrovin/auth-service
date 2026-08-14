@@ -39,7 +39,7 @@ func (h *AuthHandler) Register(ctx context.Context, req *authpb.RegisterRequest)
 		return nil, status.Error(codes.InvalidArgument, "email, password and name are required")
 	}
 
-	user, err := h.svc.Register(ctx, auth_service.RegisterInput{
+	pending, err := h.svc.Register(ctx, auth_service.RegisterInput{
 		Email:    req.Email,
 		Password: req.Password,
 		Name:     req.Name,
@@ -51,8 +51,8 @@ func (h *AuthHandler) Register(ctx context.Context, req *authpb.RegisterRequest)
 	}
 
 	return &authpb.RegisterResponse{
-		UserId:               user.ID,
-		Email:                user.Email,
+		UserId:               "",
+		Email:                pending.Email,
 		Message:              "we've sent a verification code to your email",
 		VerificationRequired: true,
 	}, nil

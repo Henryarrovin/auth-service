@@ -41,10 +41,17 @@ func NewAuthService(
 	return &AuthService{users: users, tokenStore: tokenStore, jwt: jwt, totp: totp, email: email, logger: logger}
 }
 
-func (s *AuthService) Register(ctx context.Context, in RegisterInput) (*models.User, error) {
+func (s *AuthService) Register(ctx context.Context, in RegisterInput) (*RegisterPending, error) {
 	log := middleware.FromContext(ctx, s.logger)
 	email := strings.ToLower(strings.TrimSpace(in.Email))
 	log.Info("registering user", zap.String("email", email))
+
+	// Only a VERIFIED account blocks signup
+	// non-verified attempt shouldn't permanently claim an email address
+	if existing, err := s.users.FindByEmail(ctx, email); err == nil && existing.EmailVerified {
+		log.Warn("warn.auth_service.duplicate_email", zap.String("email", email))
+		return nil, fmt.Errorf("an account with this email already exists")
+	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(in.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -57,21 +64,13 @@ func (s *AuthService) Register(ctx context.Context, in RegisterInput) (*models.U
 		role = models.RoleUser
 	}
 
-	user := &models.User{
-		Email:         email,
-		Name:          in.Name,
-		PasswordHash:  string(hash),
-		EmailVerified: false,
+	if err := s.tokenStore.SavePendingRegistration(ctx, email, data.PendingRegistration{
+		Name:         in.Name,
+		PasswordHash: string(hash),
+		Role:         role,
+	}); err != nil {
+		return nil, fmt.Errorf("saving pending signup: %w", err)
 	}
-	if err := s.users.Create(ctx, user, role); err != nil {
-		if isDuplicateEmailErr(err) {
-			log.Warn("warn.auth_service.duplicate_email", zap.String("email", email))
-			return nil, fmt.Errorf("an account with this email already exists")
-		}
-		log.Error("err.auth_service.creating_user_failed", zap.String("email", email), zap.Error(err))
-		return nil, fmt.Errorf("creating user: %w", err)
-	}
-	user.Roles = []models.Role{{Name: role}}
 
 	otp, err := randomOTP()
 	if err != nil {
@@ -85,12 +84,8 @@ func (s *AuthService) Register(ctx context.Context, in RegisterInput) (*models.U
 		return nil, fmt.Errorf("we couldn't send a verification email to that address — double check it's correct")
 	}
 
-	log.Info("user registered, verification email sent",
-		zap.String("user_id", user.ID),
-		zap.String("email", email),
-		zap.String("role", role),
-	)
-	return user, nil
+	log.Info("signup pending, verification email sent", zap.String("email", email))
+	return &RegisterPending{Email: email}, nil
 }
 
 func (s *AuthService) Login(ctx context.Context, email, password string) (*LoginResult, error) {
@@ -586,20 +581,32 @@ func (s *AuthService) VerifyEmail(ctx context.Context, email, otp string) (*Toke
 		return nil, fmt.Errorf("incorrect verification code")
 	}
 
-	user, err := s.users.FindByEmail(ctx, email)
+	pending, err := s.tokenStore.GetPendingRegistration(ctx, email)
 	if err != nil {
-		return nil, fmt.Errorf("user not found")
+		log.Warn("no pending signup for verified otp", zap.String("email", email), zap.Error(err))
+		return nil, fmt.Errorf("your signup session expired — please sign up again")
 	}
 
-	if err := s.users.MarkEmailVerified(ctx, user.ID); err != nil {
-		return nil, fmt.Errorf("marking email verified: %w", err)
+	user := &models.User{
+		Email:         email,
+		Name:          pending.Name,
+		PasswordHash:  pending.PasswordHash,
+		EmailVerified: true,
 	}
-	user.EmailVerified = true
+	if err := s.users.Create(ctx, user, pending.Role); err != nil {
+		if isDuplicateEmailErr(err) {
+			log.Warn("warn.auth_service.duplicate_email_on_verify", zap.String("email", email))
+			return nil, fmt.Errorf("this email is already verified — try logging in")
+		}
+		log.Error("err.auth_service.creating_user_on_verify_failed", zap.String("email", email), zap.Error(err))
+		return nil, fmt.Errorf("creating account: %w", err)
+	}
+	user.Roles = []models.Role{{Name: pending.Role}}
 
 	_ = s.tokenStore.DeleteEmailOTP(ctx, email)
+	_ = s.tokenStore.DeletePendingRegistration(ctx, email)
 
 	if err := s.email.SendWelcomeEmail(user.Email, user.Name); err != nil {
-		// don't fail verification just because the welcome email didn't send
 		log.Warn("failed to send welcome email", zap.String("email", email), zap.Error(err))
 	}
 
@@ -608,7 +615,7 @@ func (s *AuthService) VerifyEmail(ctx context.Context, email, otp string) (*Toke
 		return nil, err
 	}
 
-	log.Info("email verified", zap.String("user_id", user.ID))
+	log.Info("email verified, account created", zap.String("user_id", user.ID))
 	return pair, nil
 }
 
@@ -616,13 +623,9 @@ func (s *AuthService) ResendVerification(ctx context.Context, email string) erro
 	log := middleware.FromContext(ctx, s.logger)
 	email = strings.ToLower(strings.TrimSpace(email))
 
-	user, err := s.users.FindByEmail(ctx, email)
-	if err != nil {
-		// don't reveal whether the account exists
-		log.Warn("resend verification for unknown email", zap.String("email", email))
-		return nil
-	}
-	if user.EmailVerified {
+	// don't reveal whether a pending signup exists
+	if _, err := s.tokenStore.GetPendingRegistration(ctx, email); err != nil {
+		log.Warn("resend verification for unknown/expired pending signup", zap.String("email", email))
 		return nil
 	}
 
