@@ -53,3 +53,7 @@ type SyncKeyMaterial struct {
 	WrappedDEK      string
 	WrappedDEKNonce string
 }
+
+type RegisterPending struct {
+	Email string
+}

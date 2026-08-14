@@ -11,6 +11,12 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+type PendingRegistration struct {
+	Name         string `json:"name"`
+	PasswordHash string `json:"passwordHash"`
+	Role         string `json:"role"`
+}
+
 // TokenStore manages refresh token allowlisting in Redis.
 // Only tokens present in Redis are valid — revoking means deleting the key.
 type TokenStore struct {
@@ -174,4 +180,33 @@ func (s *TokenStore) GetEmailOTP(ctx context.Context, email string) (string, err
 // DeleteEmailOTP removes the code after it's used
 func (s *TokenStore) DeleteEmailOTP(ctx context.Context, email string) error {
 	return s.rdb.Del(ctx, fmt.Sprintf("emailverify:%s", email)).Err()
+}
+
+func (s *TokenStore) SavePendingRegistration(ctx context.Context, email string, reg PendingRegistration) error {
+	data, err := json.Marshal(reg)
+	if err != nil {
+		return fmt.Errorf("marshal pending registration: %w", err)
+	}
+	key := fmt.Sprintf("pendingreg:%s", email)
+	return s.rdb.Set(ctx, key, data, 15*time.Minute).Err()
+}
+
+func (s *TokenStore) GetPendingRegistration(ctx context.Context, email string) (*PendingRegistration, error) {
+	key := fmt.Sprintf("pendingreg:%s", email)
+	data, err := s.rdb.Get(ctx, key).Result()
+	if err == redis.Nil {
+		return nil, fmt.Errorf("signup expired or not found — please sign up again")
+	}
+	if err != nil {
+		return nil, err
+	}
+	var reg PendingRegistration
+	if err := json.Unmarshal([]byte(data), &reg); err != nil {
+		return nil, fmt.Errorf("unmarshal pending registration: %w", err)
+	}
+	return &reg, nil
+}
+
+func (s *TokenStore) DeletePendingRegistration(ctx context.Context, email string) error {
+	return s.rdb.Del(ctx, fmt.Sprintf("pendingreg:%s", email)).Err()
 }
